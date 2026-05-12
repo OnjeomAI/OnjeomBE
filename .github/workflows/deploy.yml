@@ -1,0 +1,126 @@
+# =============================================
+# 온점 (OnJeom) - CI/CD 워크플로우
+# 트리거: main 브랜치 push (PR 머지) 시 자동 배포
+# 브랜치 전략: feature → develop (기본) → main (배포)
+# =============================================
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------
+      # 1. 코드 체크아웃
+      # -----------------------------------------------
+      - name: Github Repository 파일 불러오기
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------
+      # 2. Java 17 세팅
+      # -----------------------------------------------
+      - name: JDK 17 설치
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      # -----------------------------------------------
+      # 3. application yml 파일 생성 (base64 방식)
+      #    환경변수 추가 시 yml 수정 후 Secret만 업데이트
+      # -----------------------------------------------
+      - name: application 설정 파일 생성
+        run: |
+          echo "${{ secrets.APPLICATION_PROD_YML }}" | base64 --decode > ./src/main/resources/application-prod.yml
+
+      # -----------------------------------------------
+      # 4. Gradle 빌드 (테스트 제외)
+      # -----------------------------------------------
+      - name: 빌드 권한 부여
+        run: chmod +x ./gradlew
+
+      - name: Test 제외 & Build
+        run: ./gradlew clean build -x test
+
+      # -----------------------------------------------
+      # 5. AWS 자격증명 설정
+      # -----------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-northeast-2
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # -----------------------------------------------
+      # 6. ECR 로그인
+      # -----------------------------------------------
+      - name: ECR에 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # -----------------------------------------------
+      # 7. Docker 이미지 빌드 & ECR 푸시
+      # -----------------------------------------------
+      - name: Docker 이미지 빌드 및 푸시
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # -----------------------------------------------
+      # 8. EC2 SSH 접속 후 배포
+      # -----------------------------------------------
+      - name: EC2에 원격 접속 후 배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # ECR 로그인
+            aws ecr get-login-password --region ap-northeast-2 | \
+              docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            
+            # 기존 컨테이너 중지 및 삭제
+            docker rm -f onjeom-backend || true
+            
+            # 최신 이미지 pull
+            docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
+            
+            # 로그 디렉토리 생성
+            mkdir -p /home/ubuntu/app/logs
+            
+            # 새 컨테이너 실행
+            docker run -d \
+              --name onjeom-backend \
+              --restart always \
+              -p 8080:8080 \
+              -e TZ=Asia/Seoul \
+              -v /home/ubuntu/app/logs:/app/logs \
+              ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
+            
+            # 미사용 이미지 정리
+            docker image prune -f
+            
+            echo "배포 완료!"
+            docker ps | grep onjeom-backend
+
+      # -----------------------------------------------
+      # 9. 헬스체크 (30초 후 서버 정상 응답 확인)
+      # -----------------------------------------------
+      - name: Health check
+        run: |
+          sleep 30
+          curl --fail --retry 5 --retry-delay 10 \
+            http://${{ secrets.EC2_HOST }}:8080/actuator/health \
+            || (echo "헬스체크 실패!" && exit 1)
+          echo "헬스체크 성공!"

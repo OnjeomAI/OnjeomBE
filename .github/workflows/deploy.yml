@@ -105,6 +105,7 @@ jobs:
               --restart always \
               -p 8080:8080 \
               -e TZ=Asia/Seoul \
+              -e SPRING_PROFILES_ACTIVE=prod \
               -v /home/ubuntu/app/logs:/app/logs \
               ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
             

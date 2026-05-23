@@ -35,7 +35,11 @@ public enum ErrorCode {
     CURRICULUM_NOT_FOUND(404, "존재하지 않는 커리큘럼입니다."),
 
     // 진단
-    DIAGNOSTIC_NOT_FOUND(404, "진단 결과가 존재하지 않습니다.");
+    DIAGNOSTIC_NOT_FOUND(404, "진단 결과가 존재하지 않습니다."),
+
+    // CMS
+    KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),
+    INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다.");
 
     private final int status;
     private final String message;

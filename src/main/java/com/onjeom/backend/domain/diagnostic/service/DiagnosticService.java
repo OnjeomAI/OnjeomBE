@@ -10,7 +10,9 @@ import com.onjeom.backend.domain.diagnostic.dto.response.DiagnosticResultRespons
 import com.onjeom.backend.domain.diagnostic.entity.DiagnosticResult;
 import com.onjeom.backend.domain.diagnostic.repository.DiagnosticResultRepository;
 import com.onjeom.backend.domain.problem.entity.Problem;
+import com.onjeom.backend.domain.problem.entity.ProblemKeyword;
 import com.onjeom.backend.domain.problem.enums.ReadingType;
+import com.onjeom.backend.domain.problem.repository.ProblemKeywordRepository;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import com.onjeom.backend.domain.user.entity.User;
 import com.onjeom.backend.domain.user.repository.UserRepository;
@@ -33,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DiagnosticService {
 
     private final ProblemRepository problemRepository;
+    private final ProblemKeywordRepository problemKeywordRepository;
     private final DiagnosticResultRepository diagnosticResultRepository;
     private final AiScoringService aiScoringService;
     private final CurriculumService curriculumService;
@@ -69,9 +72,10 @@ public class DiagnosticService {
         Problem problem = problemRepository.findById(request.problemId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
 
+        List<ProblemKeyword> keywords = problemKeywordRepository.findByProblemId(problem.getId());
         int score = aiScoringService.scoreAnswer(
                 problem.getPassageText(), problem.getQuestionText(),
-                problem.getModelAnswer(), request.answerText());
+                problem.getModelAnswer(), request.answerText(), keywords);
         scores.add(score);
 
         if (scores.size() == 10) {

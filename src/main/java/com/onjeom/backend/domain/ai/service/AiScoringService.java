@@ -1,7 +1,10 @@
 package com.onjeom.backend.domain.ai.service;
 
+import java.util.List;
+
 public interface AiScoringService {
 
-    int scoreAnswer(String passageText, String questionText,
-                    String modelAnswer, String userAnswer);
+    AiGradingResult scoreAnswer(String passageText, String questionText,
+                                String modelAnswer, List<AiKeyword> keywords,
+                                String userAnswer);
 }

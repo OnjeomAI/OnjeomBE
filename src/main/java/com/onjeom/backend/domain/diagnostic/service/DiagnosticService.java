@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +72,7 @@ public class DiagnosticService {
 
         int score = aiScoringService.scoreAnswer(
                 problem.getPassageText(), problem.getQuestionText(),
-                problem.getModelAnswer(), request.answerText());
+                problem.getModelAnswer(), List.of(), request.answerText()).score();
         scores.add(score);
 
         if (scores.size() == 10) {

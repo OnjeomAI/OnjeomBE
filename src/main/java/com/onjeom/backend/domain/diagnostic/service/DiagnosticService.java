@@ -1,5 +1,9 @@
 package com.onjeom.backend.domain.diagnostic.service;
 
+import com.onjeom.backend.domain.ai.dto.IrtEstimateRequest;
+import com.onjeom.backend.domain.ai.dto.IrtEstimateResponse;
+import com.onjeom.backend.domain.ai.dto.IrtResponseItemDto;
+import com.onjeom.backend.domain.ai.service.AiIrtService;
 import com.onjeom.backend.domain.ai.service.AiScoringService;
 import com.onjeom.backend.domain.curriculum.entity.Curriculum;
 import com.onjeom.backend.domain.curriculum.service.CurriculumService;
@@ -24,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,6 +41,7 @@ public class DiagnosticService {
     private final ProblemKeywordRepository problemKeywordRepository;
     private final DiagnosticResultRepository diagnosticResultRepository;
     private final AiScoringService aiScoringService;
+    private final AiIrtService aiIrtService;
     private final CurriculumService curriculumService;
     private final UserRepository userRepository;
 
@@ -98,7 +102,9 @@ public class DiagnosticService {
 
     private DiagnosticNextProblemResponse completeSession(
             Long userId, List<Long> session, List<Integer> scores) {
-        BigDecimal theta = calculateTheta(scores);
+        List<IrtResponseItemDto> irtItems = buildIrtItems(session, scores);
+        IrtEstimateResponse irtResult = aiIrtService.estimateAbility(new IrtEstimateRequest(irtItems));
+        BigDecimal theta = irtResult.theta();
         Map<String, Integer> competencyScores = calculateCompetencyScores(session, scores);
         int level = determineLevel(theta);
 
@@ -155,11 +161,17 @@ public class DiagnosticService {
         return new DiagnosticNextProblemResponse(false, nextProblem, null);
     }
 
-    private BigDecimal calculateTheta(List<Integer> scores) {
-        // TODO: 실제 IRT 3PL 모델로 교체 — STEP 6
-        double avg = scores.stream().mapToInt(Integer::intValue).average().orElse(50.0);
-        double theta = (avg - 50.0) / 100.0 * 6.0;
-        return BigDecimal.valueOf(theta).setScale(3, RoundingMode.HALF_UP);
+    private List<IrtResponseItemDto> buildIrtItems(List<Long> problemIds, List<Integer> scores) {
+        List<IrtResponseItemDto> items = new ArrayList<>();
+        for (int i = 0; i < problemIds.size() && i < scores.size(); i++) {
+            int score = scores.get(i);
+            problemRepository.findById(problemIds.get(i)).ifPresent(p ->
+                items.add(new IrtResponseItemDto(
+                        p.getDifficulty(), score,
+                        p.getAParam(), p.getBParam(), p.getCParam()))
+            );
+        }
+        return items;
     }
 
     private Map<String, Integer> calculateCompetencyScores(List<Long> problemIds, List<Integer> scores) {

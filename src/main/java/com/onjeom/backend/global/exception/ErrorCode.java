@@ -33,9 +33,13 @@ public enum ErrorCode {
 
     // 커리큘럼
     CURRICULUM_NOT_FOUND(404, "존재하지 않는 커리큘럼입니다."),
+    CURRICULUM_ALREADY_EXISTS(409, "이미 활성화된 커리큘럼이 존재합니다."),
 
     // 진단
     DIAGNOSTIC_NOT_FOUND(404, "진단 결과가 존재하지 않습니다."),
+    DIAGNOSTIC_SESSION_NOT_FOUND(404, "진단 세션이 존재하지 않습니다."),
+    DIAGNOSTIC_ALREADY_COMPLETED(409, "이미 완료된 진단입니다."),
+    NO_PROBLEM_AVAILABLE(404, "출제 가능한 문제가 없습니다."),
 
     // CMS
     KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),

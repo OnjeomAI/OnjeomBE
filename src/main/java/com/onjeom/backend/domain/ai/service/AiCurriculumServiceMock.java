@@ -4,7 +4,7 @@ import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,7 +12,7 @@ import java.util.*;
 
 @Slf4j
 @Service
-@Primary
+@ConditionalOnProperty(name = "ai.scoring.enabled", havingValue = "false", matchIfMissing = true)
 @RequiredArgsConstructor
 public class AiCurriculumServiceMock implements AiCurriculumService {
 

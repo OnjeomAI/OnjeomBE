@@ -31,6 +31,9 @@ public enum ErrorCode {
     // 문제
     PROBLEM_NOT_FOUND(404, "존재하지 않는 문제입니다."),
 
+    // 답변
+    RESPONSE_NOT_FOUND(404, "존재하지 않는 답변입니다."),
+
     // 커리큘럼
     CURRICULUM_NOT_FOUND(404, "존재하지 않는 커리큘럼입니다."),
     CURRICULUM_ALREADY_EXISTS(409, "이미 활성화된 커리큘럼이 존재합니다."),

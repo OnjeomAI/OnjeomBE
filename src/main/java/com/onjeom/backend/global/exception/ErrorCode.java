@@ -48,6 +48,9 @@ public enum ErrorCode {
     HIGHLIGHT_NOT_FOUND(404, "하이라이트가 존재하지 않습니다."),
     INVALID_HIGHLIGHT_RANGE(400, "하이라이트 범위가 올바르지 않습니다."),
 
+    // AI
+    AI_TUTOR_UNAVAILABLE(503, "AI 튜터 서비스를 현재 사용할 수 없습니다."),
+
     // CMS
     KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),
     INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다.");

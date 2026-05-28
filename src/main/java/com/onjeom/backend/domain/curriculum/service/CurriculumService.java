@@ -157,6 +157,26 @@ public class CurriculumService {
                 .orElse(null);
     }
 
+    public CurriculumItemResponse startItem(Long userId, Long itemId) {
+        CurriculumItem item = curriculumItemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CURRICULUM_NOT_FOUND));
+        if (!item.getCurriculum().getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+        item.start();
+        return toItemResponse(item);
+    }
+
+    public CurriculumItemResponse skipItem(Long userId, Long itemId) {
+        CurriculumItem item = curriculumItemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CURRICULUM_NOT_FOUND));
+        if (!item.getCurriculum().getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+        item.skip();
+        return toItemResponse(item);
+    }
+
     private CurriculumItemResponse toItemResponse(CurriculumItem item) {
         return new CurriculumItemResponse(
                 item.getId(),

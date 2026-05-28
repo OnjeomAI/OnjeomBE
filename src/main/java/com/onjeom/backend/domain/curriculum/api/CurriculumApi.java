@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Tag(name = "Curriculum", description = "커리큘럼 API")
 public interface CurriculumApi {
@@ -24,4 +26,18 @@ public interface CurriculumApi {
     @GetMapping("/progress")
     ResponseEntity<ApiResponse<?>> getProgress(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails);
+
+    @Operation(summary = "커리큘럼 아이템 학습 시작")
+    @SecurityRequirement(name = "BearerAuth")
+    @PatchMapping("/items/{itemId}/start")
+    ResponseEntity<ApiResponse<?>> startItem(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long itemId);
+
+    @Operation(summary = "커리큘럼 아이템 스킵")
+    @SecurityRequirement(name = "BearerAuth")
+    @PatchMapping("/items/{itemId}/skip")
+    ResponseEntity<ApiResponse<?>> skipItem(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long itemId);
 }

@@ -3,6 +3,10 @@ package com.onjeom.backend.domain.response.service;
 import com.onjeom.backend.domain.ai.service.AiGradingResult;
 import com.onjeom.backend.domain.ai.service.AiKeyword;
 import com.onjeom.backend.domain.ai.service.AiScoringService;
+import com.onjeom.backend.domain.curriculum.entity.CurriculumItem;
+import com.onjeom.backend.domain.curriculum.repository.CurriculumItemRepository;
+import com.onjeom.backend.domain.learning.service.CompetencyScoreService;
+import com.onjeom.backend.domain.learning.service.ReviewScheduleService;
 import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.repository.ProblemKeywordRepository;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
@@ -29,6 +33,9 @@ public class ResponseService {
     private final ProblemKeywordRepository problemKeywordRepository;
     private final UserRepository userRepository;
     private final AiScoringService aiScoringService;
+    private final CompetencyScoreService competencyScoreService;
+    private final ReviewScheduleService reviewScheduleService;
+    private final CurriculumItemRepository curriculumItemRepository;
 
     @Transactional
     public ResponseDetailResponse submit(Long userId, SubmitAnswerRequest request) {
@@ -66,6 +73,25 @@ public class ResponseService {
                 .build();
 
         responseRepository.save(response);
+
+        if (request.curriculumItemId() != null) {
+            curriculumItemRepository.findById(request.curriculumItemId())
+                    .ifPresent(CurriculumItem::complete);
+        }
+
+        competencyScoreService.updateAfterResponse(
+                userId,
+                response.getProblem().getReadingType(),
+                response.getFinalScore()
+        );
+
+        if (response.getFinalScore() < 60) {
+            reviewScheduleService.createOrUpdateSchedule(
+                    userId,
+                    problem.getId(),
+                    false
+            );
+        }
 
         return ResponseDetailResponse.from(response, result.foundKeywords());
     }

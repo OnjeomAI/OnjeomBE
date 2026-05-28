@@ -4,6 +4,7 @@ import com.onjeom.backend.domain.ai.dto.IrtEstimateRequest;
 import com.onjeom.backend.domain.ai.dto.IrtEstimateResponse;
 import com.onjeom.backend.domain.ai.dto.IrtResponseItemDto;
 import com.onjeom.backend.domain.ai.service.AiIrtService;
+import com.onjeom.backend.domain.ai.service.AiKeyword;
 import com.onjeom.backend.domain.ai.service.AiScoringService;
 import com.onjeom.backend.domain.curriculum.entity.Curriculum;
 import com.onjeom.backend.domain.curriculum.service.CurriculumService;
@@ -77,9 +78,13 @@ public class DiagnosticService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
 
         List<ProblemKeyword> keywords = problemKeywordRepository.findByProblemId(problem.getId());
+        List<AiKeyword> aiKeywords = keywords.stream()
+                .map(k -> new AiKeyword(k.getKeyword(), k.getWeight()))
+                .toList();
+
         int score = aiScoringService.scoreAnswer(
                 problem.getPassageText(), problem.getQuestionText(),
-                problem.getModelAnswer(), request.answerText(), keywords);
+                problem.getModelAnswer(), aiKeywords, request.answerText()).score();
         scores.add(score);
 
         if (scores.size() == 10) {

@@ -3,9 +3,9 @@ package com.onjeom.backend.domain.diagnostic.service;
 import com.onjeom.backend.domain.ai.dto.IrtEstimateRequest;
 import com.onjeom.backend.domain.ai.dto.IrtEstimateResponse;
 import com.onjeom.backend.domain.ai.dto.IrtResponseItemDto;
+import com.onjeom.backend.domain.ai.service.AiGradingService;
 import com.onjeom.backend.domain.ai.service.AiIrtService;
 import com.onjeom.backend.domain.ai.service.AiKeyword;
-import com.onjeom.backend.domain.ai.service.AiScoringService;
 import com.onjeom.backend.domain.curriculum.entity.Curriculum;
 import com.onjeom.backend.domain.curriculum.service.CurriculumService;
 import com.onjeom.backend.domain.diagnostic.dto.request.DiagnosticAnswerRequest;
@@ -41,7 +41,7 @@ public class DiagnosticService {
     private final ProblemRepository problemRepository;
     private final ProblemKeywordRepository problemKeywordRepository;
     private final DiagnosticResultRepository diagnosticResultRepository;
-    private final AiScoringService aiScoringService;
+    private final AiGradingService aiGradingService;
     private final AiIrtService aiIrtService;
     private final CurriculumService curriculumService;
     private final UserRepository userRepository;
@@ -82,7 +82,7 @@ public class DiagnosticService {
                 .map(k -> new AiKeyword(k.getKeyword(), k.getWeight()))
                 .toList();
 
-        int score = aiScoringService.scoreAnswer(
+        int score = aiGradingService.grade(
                 problem.getPassageText(), problem.getQuestionText(),
                 problem.getModelAnswer(), aiKeywords, request.answerText()).score();
         scores.add(score);

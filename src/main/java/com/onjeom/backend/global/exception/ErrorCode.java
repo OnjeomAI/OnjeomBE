@@ -53,7 +53,10 @@ public enum ErrorCode {
 
     // CMS
     KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),
-    INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다.");
+    INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다."),
+
+    // 대시보드
+    STATS_NOT_FOUND(404, "학습 통계 데이터가 없습니다.");
 
     private final int status;
     private final String message;

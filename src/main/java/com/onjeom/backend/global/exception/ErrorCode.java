@@ -44,6 +44,10 @@ public enum ErrorCode {
     DIAGNOSTIC_ALREADY_COMPLETED(409, "이미 완료된 진단입니다."),
     NO_PROBLEM_AVAILABLE(404, "출제 가능한 문제가 없습니다."),
 
+    // 하이라이트
+    HIGHLIGHT_NOT_FOUND(404, "하이라이트가 존재하지 않습니다."),
+    INVALID_HIGHLIGHT_RANGE(400, "하이라이트 범위가 올바르지 않습니다."),
+
     // CMS
     KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),
     INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다.");

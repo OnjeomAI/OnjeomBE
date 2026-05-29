@@ -15,16 +15,21 @@ import com.onjeom.backend.domain.problem.repository.ProblemKeywordRepository;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import com.onjeom.backend.global.exception.CustomException;
 import com.onjeom.backend.global.exception.ErrorCode;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -33,6 +38,16 @@ public class CmsService {
     private final ProblemRepository problemRepository;
     private final ProblemKeywordRepository problemKeywordRepository;
     private final ProblemChoiceRepository problemChoiceRepository;
+
+    @Value("${ai.server.url}")
+    private String aiServerUrl;
+
+    private RestClient aiRestClient;
+
+    @PostConstruct
+    public void init() {
+        this.aiRestClient = RestClient.builder().baseUrl(aiServerUrl).build();
+    }
 
     @Transactional(readOnly = true)
     public Page<CmsProblemsResponse> getAllProblems(Pageable pageable) {
@@ -74,7 +89,7 @@ public class CmsService {
             }
         }
 
-        // TODO: STEP 6 — 벡터 인덱싱 비동기 이벤트 발행
+        triggerIndexing(problem);
 
         return toDetailResponse(problem, keywords);
     }
@@ -112,6 +127,27 @@ public class CmsService {
         }
 
         return responses;
+    }
+
+    private void triggerIndexing(Problem problem) {
+        record IndexRequest(String content_id, String passage, String question, String model_answer) {}
+        try {
+            problem.updateVectorIndexStatus(VectorIndexStatus.INDEXING);
+            aiRestClient.post()
+                    .uri("/api/indexing/index")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new IndexRequest(
+                            problem.getId().toString(),
+                            problem.getPassageText(),
+                            problem.getQuestionText(),
+                            problem.getModelAnswer()
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.error("벡터 인덱싱 요청 실패 (problemId={}): {}", problem.getId(), e.getMessage());
+            problem.updateVectorIndexStatus(VectorIndexStatus.PENDING);
+        }
     }
 
     public void deleteProblem(Long problemId) {

@@ -1,6 +1,7 @@
 package com.onjeom.backend.domain.cms.controller;
 
 import com.onjeom.backend.domain.cms.api.CmsApi;
+import com.onjeom.backend.domain.cms.dto.request.GenerateProblemRequest;
 import com.onjeom.backend.domain.cms.dto.request.UpdateKeywordRequest;
 import com.onjeom.backend.domain.cms.service.CmsService;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
@@ -34,6 +35,12 @@ public class CmsController implements CmsApi {
     @PostMapping("/problems")
     public ResponseEntity<ApiResponse<?>> createProblem(@Valid @RequestBody CreateProblemRequest request) {
         return ResponseEntity.ok(ApiResponse.success(cmsService.createProblem(request)));
+    }
+
+    @Override
+    @PostMapping("/problems/generate")
+    public ResponseEntity<ApiResponse<?>> generateProblem(@Valid @RequestBody GenerateProblemRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(cmsService.generateProblem(request)));
     }
 
     @Override

@@ -50,6 +50,7 @@ public enum ErrorCode {
 
     // AI
     AI_TUTOR_UNAVAILABLE(503, "AI 튜터 서비스를 현재 사용할 수 없습니다."),
+    AI_SERVER_ERROR(502, "AI 서버 오류가 발생했습니다."),
 
     // CMS
     KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),

@@ -180,9 +180,11 @@ public class CmsService {
     }
 
     private void triggerIndexing(Problem problem) {
-        record IndexRequest(String content_id, String passage, String question, String model_answer) {}
+        record IndexRequest(String content_id, String passage, String question, String model_answer, java.util.List<String> keywords) {}
         try {
             problem.updateVectorIndexStatus(VectorIndexStatus.INDEXING);
+            java.util.List<String> keywords = problemKeywordRepository.findByProblemId(problem.getId())
+                    .stream().map(ProblemKeyword::getKeyword).toList();
             aiRestClient.post()
                     .uri("/api/indexing/index")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -190,10 +192,12 @@ public class CmsService {
                             problem.getId().toString(),
                             problem.getPassageText(),
                             problem.getQuestionText(),
-                            problem.getModelAnswer()
+                            problem.getModelAnswer(),
+                            keywords
                     ))
                     .retrieve()
                     .toBodilessEntity();
+            problem.updateVectorIndexStatus(VectorIndexStatus.DONE);
         } catch (Exception e) {
             log.error("벡터 인덱싱 요청 실패 (problemId={}): {}", problem.getId(), e.getMessage());
             problem.updateVectorIndexStatus(VectorIndexStatus.PENDING);

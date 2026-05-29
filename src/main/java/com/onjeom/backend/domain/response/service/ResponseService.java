@@ -61,7 +61,7 @@ public class ResponseService {
                 .rawScore(result.stage1Score())
                 .finalScore(result.score())
                 .feedbackText(result.feedback())
-                .scoringBasis(result.gradeReason())
+                .scoringBasis(result.feedback())
                 .attemptNumber(attemptNumber)
                 .build();
 

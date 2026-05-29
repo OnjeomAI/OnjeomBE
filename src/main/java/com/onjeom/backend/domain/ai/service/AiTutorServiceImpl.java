@@ -4,6 +4,7 @@ import com.onjeom.backend.domain.ai.dto.request.TutorQuestionRequest;
 import com.onjeom.backend.domain.ai.dto.response.TutorAnswerResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -11,6 +12,7 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 
 @Slf4j
+@Primary
 @Service
 public class AiTutorServiceImpl implements AiTutorService {
 

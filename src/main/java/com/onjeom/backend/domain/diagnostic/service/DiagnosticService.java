@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,8 +94,12 @@ public class DiagnosticService {
 
     private DiagnosticNextProblemResponse completeSession(
             Long userId, List<Long> session, List<Integer> scores) {
-        BigDecimal theta = calculateTheta(scores);
-        Map<String, Integer> competencyScores = calculateCompetencyScores(session, scores);
+        List<Problem> problems = session.stream()
+                .map(id -> problemRepository.findById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+        BigDecimal theta = calculateTheta(problems, scores);
+        Map<String, Integer> competencyScores = calculateCompetencyScores(problems, scores);
         int level = determineLevel(theta);
 
         User user = userRepository.findById(userId)
@@ -152,19 +155,55 @@ public class DiagnosticService {
         return new DiagnosticNextProblemResponse(false, nextProblem, null);
     }
 
-    private BigDecimal calculateTheta(List<Integer> scores) {
-        // TODO: 실제 IRT 3PL 모델로 교체 — STEP 6
-        double avg = scores.stream().mapToInt(Integer::intValue).average().orElse(50.0);
-        double theta = (avg - 50.0) / 100.0 * 6.0;
+    private BigDecimal calculateTheta(List<Problem> problems, List<Integer> scores) {
+        if (scores.isEmpty()) return BigDecimal.ZERO;
+
+        List<Integer> difficulties = new ArrayList<>();
+        List<Integer> responses = new ArrayList<>();
+        for (int i = 0; i < Math.min(problems.size(), scores.size()); i++) {
+            difficulties.add(problems.get(i).getDifficulty());
+            responses.add(scores.get(i) >= 60 ? 1 : 0);
+        }
+
+        long correct = responses.stream().filter(r -> r == 1).count();
+        if (correct == responses.size()) return BigDecimal.valueOf(2.5).setScale(3, RoundingMode.HALF_UP);
+        if (correct == 0) return BigDecimal.valueOf(-2.5).setScale(3, RoundingMode.HALF_UP);
+
+        // 2PL IRT Newton-Raphson MLE (a=1 고정, c=0)
+        final double D = 1.702;
+        double theta = 0.0;
+        for (int iter = 0; iter < 50; iter++) {
+            double grad = 0.0, hess = 0.0;
+            for (int i = 0; i < difficulties.size(); i++) {
+                double b = difficultyToB(difficulties.get(i));
+                double p = 1.0 / (1.0 + Math.exp(-D * (theta - b)));
+                grad += D * (responses.get(i) - p);
+                hess -= D * D * p * (1 - p);
+            }
+            if (Math.abs(hess) < 1e-10) break;
+            double delta = grad / hess;
+            theta -= delta;
+            theta = Math.max(-3.0, Math.min(3.0, theta));
+            if (Math.abs(delta) < 1e-6) break;
+        }
+
         return BigDecimal.valueOf(theta).setScale(3, RoundingMode.HALF_UP);
     }
 
-    private Map<String, Integer> calculateCompetencyScores(List<Long> problemIds, List<Integer> scores) {
+    private double difficultyToB(int difficulty) {
+        return switch (difficulty) {
+            case 1 -> -2.0;
+            case 2 -> -1.0;
+            case 4 -> 1.0;
+            case 5 -> 2.0;
+            default -> 0.0;
+        };
+    }
+
+    private Map<String, Integer> calculateCompetencyScores(List<Problem> problems, List<Integer> scores) {
         Map<String, List<Integer>> byType = new HashMap<>();
-        for (int i = 0; i < problemIds.size(); i++) {
-            Problem p = problemRepository.findById(problemIds.get(i)).orElse(null);
-            if (p == null) continue;
-            String key = readingTypeToKey(p.getReadingType());
+        for (int i = 0; i < Math.min(problems.size(), scores.size()); i++) {
+            String key = readingTypeToKey(problems.get(i).getReadingType());
             byType.computeIfAbsent(key, k -> new ArrayList<>()).add(scores.get(i));
         }
 

@@ -4,7 +4,6 @@ import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,7 +11,6 @@ import java.util.*;
 
 @Slf4j
 @Service
-@Primary
 @RequiredArgsConstructor
 public class AiCurriculumServiceMock implements AiCurriculumService {
 
@@ -21,7 +19,6 @@ public class AiCurriculumServiceMock implements AiCurriculumService {
     @Override
     public Map<Integer, List<Long>> generateCurriculumPlan(
             BigDecimal theta, int dailyGoal, Map<String, Integer> competencyScores) {
-        // TODO: 파인튜닝 모델 API 연동 — STEP 6에서 구현
         log.info("[MOCK] 커리큘럼 생성 생략 - 임시 플랜 반환");
 
         List<Problem> allProblems = new ArrayList<>(problemRepository.findAll());

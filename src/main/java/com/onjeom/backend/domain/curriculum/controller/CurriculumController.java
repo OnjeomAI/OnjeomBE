@@ -49,4 +49,13 @@ public class CurriculumController implements CurriculumApi {
         return ResponseEntity.ok(ApiResponse.success(
                 curriculumService.skipItem(userDetails.getUserId(), itemId)));
     }
+
+    @Override
+    @PatchMapping("/items/{itemId}/complete")
+    public ResponseEntity<ApiResponse<?>> completeItem(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long itemId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                curriculumService.completeItem(userDetails.getUserId(), itemId)));
+    }
 }

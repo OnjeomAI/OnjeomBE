@@ -16,6 +16,6 @@ public class AiScoringServiceMock implements AiScoringService {
                                        String userAnswer) {
         int score = new Random().nextInt(41) + 50;
         log.info("[MOCK] AI 채점 생략 - 임시 점수 반환: {}", score);
-        return new AiGradingResult(score, score, List.of(), List.of(), "[MOCK] 피드백 없음", "");
+        return new AiGradingResult(score, score, List.of(), List.of(), "[MOCK] 피드백 없음");
     }
 }

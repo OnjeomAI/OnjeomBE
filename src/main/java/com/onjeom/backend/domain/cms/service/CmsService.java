@@ -35,7 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -224,7 +226,7 @@ public class CmsService {
         List<CurriculumItem> items = curriculumItemRepository
                 .findByCurriculumOrderByStageAscOrderIndexAsc(curriculum);
 
-        Map<Long, CurriculumItem> byProblemId = new java.util.HashMap<>();
+        Map<Long, CurriculumItem> byProblemId = new HashMap<>();
         for (CurriculumItem item : items) {
             byProblemId.put(item.getProblem().getId(), item);
         }

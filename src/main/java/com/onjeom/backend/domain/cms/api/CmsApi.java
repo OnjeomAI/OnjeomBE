@@ -1,5 +1,6 @@
 package com.onjeom.backend.domain.cms.api;
 
+import com.onjeom.backend.domain.cms.dto.request.GenerateProblemRequest;
 import com.onjeom.backend.domain.cms.dto.request.UpdateKeywordRequest;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
 import com.onjeom.backend.domain.problem.dto.request.UpdateProblemRequest;
@@ -28,6 +29,11 @@ public interface CmsApi {
     @SecurityRequirement(name = "BearerAuth")
     @PostMapping("/problems")
     ResponseEntity<ApiResponse<?>> createProblem(@Valid @RequestBody CreateProblemRequest request);
+
+    @Operation(summary = "AI 문제 자동 생성", description = "AI가 난이도와 독해 유형에 맞는 지문/문제/모범답안을 생성하여 DB에 저장합니다.")
+    @SecurityRequirement(name = "BearerAuth")
+    @PostMapping("/problems/generate")
+    ResponseEntity<ApiResponse<?>> generateProblem(@Valid @RequestBody GenerateProblemRequest request);
 
     @Operation(summary = "문제 수정 (부분 업데이트)")
     @SecurityRequirement(name = "BearerAuth")

@@ -1,5 +1,6 @@
 package com.onjeom.backend.domain.cms.service;
 
+import com.onjeom.backend.domain.cms.dto.request.GenerateProblemRequest;
 import com.onjeom.backend.domain.cms.dto.request.UpdateKeywordRequest;
 import com.onjeom.backend.domain.cms.dto.response.CmsProblemsResponse;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
@@ -9,22 +10,29 @@ import com.onjeom.backend.domain.problem.dto.response.ProblemDetailResponse;
 import com.onjeom.backend.domain.problem.dto.response.ProblemKeywordResponse;
 import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.entity.ProblemKeyword;
+import com.onjeom.backend.domain.problem.enums.ProblemType;
+import com.onjeom.backend.domain.problem.enums.ReadingType;
 import com.onjeom.backend.domain.problem.enums.VectorIndexStatus;
 import com.onjeom.backend.domain.problem.repository.ProblemChoiceRepository;
 import com.onjeom.backend.domain.problem.repository.ProblemKeywordRepository;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import com.onjeom.backend.global.exception.CustomException;
 import com.onjeom.backend.global.exception.ErrorCode;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -33,6 +41,16 @@ public class CmsService {
     private final ProblemRepository problemRepository;
     private final ProblemKeywordRepository problemKeywordRepository;
     private final ProblemChoiceRepository problemChoiceRepository;
+
+    @Value("${ai.server.url}")
+    private String aiServerUrl;
+
+    private RestClient aiRestClient;
+
+    @PostConstruct
+    public void init() {
+        this.aiRestClient = RestClient.builder().baseUrl(aiServerUrl).build();
+    }
 
     @Transactional(readOnly = true)
     public Page<CmsProblemsResponse> getAllProblems(Pageable pageable) {
@@ -74,9 +92,56 @@ public class CmsService {
             }
         }
 
-        // TODO: STEP 6 — 벡터 인덱싱 비동기 이벤트 발행
+        triggerIndexing(problem);
 
         return toDetailResponse(problem, keywords);
+    }
+
+    public ProblemDetailResponse generateProblem(GenerateProblemRequest request) {
+        record AiGenerateRequest(int difficulty, String reading_type, String topic) {}
+        record AiGenerateResponse(String passage_text, String question_text, String model_answer,
+                                  String reading_type, int difficulty) {}
+
+        AiGenerateResponse aiResponse;
+        try {
+            aiResponse = aiRestClient.post()
+                    .uri("/api/problems/generate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new AiGenerateRequest(
+                            request.difficulty(),
+                            request.readingType().name(),
+                            request.topic()
+                    ))
+                    .retrieve()
+                    .body(AiGenerateResponse.class);
+        } catch (Exception e) {
+            log.error("AI 문제 생성 실패: {}", e.getMessage());
+            throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+        }
+
+        if (aiResponse == null) throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+
+        ReadingType readingType;
+        try {
+            readingType = ReadingType.valueOf(aiResponse.reading_type());
+        } catch (IllegalArgumentException e) {
+            readingType = request.readingType();
+        }
+
+        Problem problem = Problem.builder()
+                .passageText(aiResponse.passage_text())
+                .questionText(aiResponse.question_text())
+                .problemType(ProblemType.SHORT_ANSWER)
+                .readingType(readingType)
+                .difficulty(aiResponse.difficulty())
+                .modelAnswer(aiResponse.model_answer())
+                .vectorIndexed(false)
+                .vectorIndexStatus(VectorIndexStatus.PENDING)
+                .build();
+        problemRepository.save(problem);
+        triggerIndexing(problem);
+
+        return toDetailResponse(problem, List.of());
     }
 
     public ProblemDetailResponse updateProblem(Long problemId, UpdateProblemRequest request) {
@@ -112,6 +177,31 @@ public class CmsService {
         }
 
         return responses;
+    }
+
+    private void triggerIndexing(Problem problem) {
+        record IndexRequest(String content_id, String passage, String question, String model_answer, java.util.List<String> keywords) {}
+        try {
+            problem.updateVectorIndexStatus(VectorIndexStatus.INDEXING);
+            java.util.List<String> keywords = problemKeywordRepository.findByProblemId(problem.getId())
+                    .stream().map(ProblemKeyword::getKeyword).toList();
+            aiRestClient.post()
+                    .uri("/api/indexing/index")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new IndexRequest(
+                            problem.getId().toString(),
+                            problem.getPassageText(),
+                            problem.getQuestionText(),
+                            problem.getModelAnswer(),
+                            keywords
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
+            problem.updateVectorIndexStatus(VectorIndexStatus.DONE);
+        } catch (Exception e) {
+            log.error("벡터 인덱싱 요청 실패 (problemId={}): {}", problem.getId(), e.getMessage());
+            problem.updateVectorIndexStatus(VectorIndexStatus.PENDING);
+        }
     }
 
     public void deleteProblem(Long problemId) {

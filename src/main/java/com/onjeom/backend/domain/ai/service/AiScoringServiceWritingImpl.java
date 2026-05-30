@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 @Primary
 @RequiredArgsConstructor
-public class AiScoringServiceImpl implements AiScoringService {
+public class AiScoringServiceWritingImpl implements AiScoringService {
 
     private final RestClient aiRestClient;
 

@@ -18,7 +18,7 @@ import java.util.*;
 @Service
 @Primary
 @RequiredArgsConstructor
-public class AiCurriculumServiceImpl implements AiCurriculumService {
+public class AiCurriculumServiceWritingImpl implements AiCurriculumService {
 
     private final RestClient aiRestClient;
     private final ProblemRepository problemRepository;

@@ -7,3 +7,5 @@ ai:
     enabled: ${AI_SCORING_ENABLED:false}   # true = 실제 AI API, false = Mock
   api:
     url: ${AI_API_URL:http://localhost:8000}
+  server:
+    url: ${AI_SERVER_URL:http://localhost:8000}

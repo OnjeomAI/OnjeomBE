@@ -5,7 +5,7 @@ import com.onjeom.backend.domain.ai.dto.WritingEvaluateRequest;
 import com.onjeom.backend.domain.ai.dto.WritingEvaluateResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -14,8 +14,8 @@ import java.util.List;
 
 @Slf4j
 @Service
-@Primary
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "ai.server.impl", havingValue = "writing", matchIfMissing = true)
 public class AiScoringServiceWritingImpl implements AiScoringService {
 
     private final RestClient aiRestClient;

@@ -6,7 +6,7 @@ import com.onjeom.backend.domain.ai.dto.CurriculumPlanAiResponse;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -16,8 +16,8 @@ import java.util.*;
 
 @Slf4j
 @Service
-@Primary
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "ai.server.impl", havingValue = "writing", matchIfMissing = true)
 public class AiCurriculumServiceWritingImpl implements AiCurriculumService {
 
     private final RestClient aiRestClient;

@@ -40,4 +40,11 @@ public interface CurriculumApi {
     ResponseEntity<ApiResponse<?>> skipItem(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long itemId);
+
+    @Operation(summary = "커리큘럼 아이템 완료 처리")
+    @SecurityRequirement(name = "BearerAuth")
+    @PatchMapping("/items/{itemId}/complete")
+    ResponseEntity<ApiResponse<?>> completeItem(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long itemId);
 }

@@ -17,7 +17,7 @@ import java.util.*;
 
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "ai.scoring.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "ai.scoring.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class AiCurriculumServiceImpl implements AiCurriculumService {
 

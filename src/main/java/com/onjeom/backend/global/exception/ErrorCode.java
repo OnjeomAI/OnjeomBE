@@ -31,6 +31,9 @@ public enum ErrorCode {
     // 문제
     PROBLEM_NOT_FOUND(404, "존재하지 않는 문제입니다."),
 
+    // 답변
+    RESPONSE_NOT_FOUND(404, "존재하지 않는 답변입니다."),
+
     // 커리큘럼
     CURRICULUM_NOT_FOUND(404, "존재하지 않는 커리큘럼입니다."),
     CURRICULUM_ALREADY_EXISTS(409, "이미 활성화된 커리큘럼이 존재합니다."),
@@ -41,9 +44,20 @@ public enum ErrorCode {
     DIAGNOSTIC_ALREADY_COMPLETED(409, "이미 완료된 진단입니다."),
     NO_PROBLEM_AVAILABLE(404, "출제 가능한 문제가 없습니다."),
 
+    // 하이라이트
+    HIGHLIGHT_NOT_FOUND(404, "하이라이트가 존재하지 않습니다."),
+    INVALID_HIGHLIGHT_RANGE(400, "하이라이트 범위가 올바르지 않습니다."),
+
+    // AI
+    AI_TUTOR_UNAVAILABLE(503, "AI 튜터 서비스를 현재 사용할 수 없습니다."),
+    AI_SERVER_ERROR(502, "AI 서버 오류가 발생했습니다."),
+
     // CMS
     KEYWORD_LIMIT_EXCEEDED(400, "핵심 키워드는 문제당 최대 10개까지 등록 가능합니다."),
-    INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다.");
+    INVALID_DIFFICULTY(400, "난이도는 1~5 사이의 값이어야 합니다."),
+
+    // 대시보드
+    STATS_NOT_FOUND(404, "학습 통계 데이터가 없습니다.");
 
     private final int status;
     private final String message;

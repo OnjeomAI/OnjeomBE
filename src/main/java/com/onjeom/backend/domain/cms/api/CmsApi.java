@@ -1,6 +1,7 @@
 package com.onjeom.backend.domain.cms.api;
 
 import com.onjeom.backend.domain.cms.dto.request.GenerateProblemRequest;
+import com.onjeom.backend.domain.cms.dto.request.UpdateCurriculumOrderRequest;
 import com.onjeom.backend.domain.cms.dto.request.UpdateKeywordRequest;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
 import com.onjeom.backend.domain.problem.dto.request.UpdateProblemRequest;
@@ -53,4 +54,16 @@ public interface CmsApi {
     ResponseEntity<ApiResponse<?>> updateKeywords(
             @PathVariable Long problemId,
             @Valid @RequestBody UpdateKeywordRequest request);
+
+    @Operation(summary = "벡터 인덱싱 재시도", description = "PENDING/FAILED 상태 문제의 벡터 인덱싱을 수동으로 재시도합니다.")
+    @SecurityRequirement(name = "BearerAuth")
+    @PostMapping("/problems/{problemId}/reindex")
+    ResponseEntity<ApiResponse<?>> reindexProblem(@PathVariable Long problemId);
+
+    @Operation(summary = "커리큘럼 문제 순서 편집", description = "problemIds 순서대로 커리큘럼 항목의 orderIndex를 재설정합니다.")
+    @SecurityRequirement(name = "BearerAuth")
+    @PutMapping("/curriculum/{curriculumId}/order")
+    ResponseEntity<ApiResponse<?>> reorderCurriculum(
+            @PathVariable Long curriculumId,
+            @Valid @RequestBody UpdateCurriculumOrderRequest request);
 }

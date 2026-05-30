@@ -2,6 +2,7 @@ package com.onjeom.backend.domain.cms.controller;
 
 import com.onjeom.backend.domain.cms.api.CmsApi;
 import com.onjeom.backend.domain.cms.dto.request.GenerateProblemRequest;
+import com.onjeom.backend.domain.cms.dto.request.UpdateCurriculumOrderRequest;
 import com.onjeom.backend.domain.cms.dto.request.UpdateKeywordRequest;
 import com.onjeom.backend.domain.cms.service.CmsService;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
@@ -64,5 +65,21 @@ public class CmsController implements CmsApi {
             @PathVariable Long problemId,
             @Valid @RequestBody UpdateKeywordRequest request) {
         return ResponseEntity.ok(ApiResponse.success(cmsService.updateKeywords(problemId, request)));
+    }
+
+    @Override
+    @PostMapping("/problems/{problemId}/reindex")
+    public ResponseEntity<ApiResponse<?>> reindexProblem(@PathVariable Long problemId) {
+        cmsService.reindexProblem(problemId);
+        return ResponseEntity.ok(ApiResponse.success("벡터 인덱싱이 완료되었습니다.", null));
+    }
+
+    @Override
+    @PutMapping("/curriculum/{curriculumId}/order")
+    public ResponseEntity<ApiResponse<?>> reorderCurriculum(
+            @PathVariable Long curriculumId,
+            @Valid @RequestBody UpdateCurriculumOrderRequest request) {
+        cmsService.reorderCurriculum(curriculumId, request);
+        return ResponseEntity.ok(ApiResponse.success("커리큘럼 순서가 업데이트되었습니다.", null));
     }
 }

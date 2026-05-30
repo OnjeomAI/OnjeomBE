@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.MediaType;
 
 @Tag(name = "Dashboard", description = "대시보드 API")
 public interface DashboardApi {
@@ -50,5 +51,11 @@ public interface DashboardApi {
     @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/admin/dashboard/stats")
     ResponseEntity<ApiResponse<?>> getAdminStats(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails);
+
+    @Operation(summary = "관리자 통계 CSV 내보내기", description = "전체 사용자 통계 및 역량별 평균 점수를 CSV 파일로 다운로드합니다.")
+    @SecurityRequirement(name = "BearerAuth")
+    @GetMapping(value = "/admin/dashboard/stats/export", produces = MediaType.TEXT_PLAIN_VALUE)
+    ResponseEntity<String> exportAdminStats(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails);
 }

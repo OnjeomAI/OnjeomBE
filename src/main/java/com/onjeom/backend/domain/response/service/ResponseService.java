@@ -10,7 +10,9 @@ import com.onjeom.backend.domain.learning.service.ReviewScheduleService;
 import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.repository.ProblemKeywordRepository;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
+import com.onjeom.backend.domain.problem.dto.response.ProblemKeywordResponse;
 import com.onjeom.backend.domain.response.dto.request.SubmitAnswerRequest;
+import com.onjeom.backend.domain.response.dto.response.AnswerCompareResponse;
 import com.onjeom.backend.domain.response.dto.response.ResponseDetailResponse;
 import com.onjeom.backend.domain.response.entity.Response;
 import com.onjeom.backend.domain.response.repository.ResponseRepository;
@@ -114,5 +116,33 @@ public class ResponseService {
                 .stream()
                 .map(r -> ResponseDetailResponse.from(r, List.of()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AnswerCompareResponse getCompare(Long userId, Long responseId) {
+        Response response = responseRepository.findById(responseId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESPONSE_NOT_FOUND));
+
+        if (!responseRepository.existsByIdAndUserId(responseId, userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        List<ProblemKeywordResponse> keywords = problemKeywordRepository
+                .findByProblemId(response.getProblem().getId())
+                .stream()
+                .map(k -> new ProblemKeywordResponse(k.getId(), k.getKeyword(), k.getWeight()))
+                .toList();
+
+        return new AnswerCompareResponse(
+                response.getId(),
+                response.getProblem().getId(),
+                response.getProblem().getPassageText(),
+                response.getProblem().getQuestionText(),
+                response.getAnswerText(),
+                response.getProblem().getModelAnswer(),
+                response.getFinalScore(),
+                response.getFeedbackText(),
+                keywords
+        );
     }
 }

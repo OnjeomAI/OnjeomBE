@@ -3,11 +3,10 @@ package com.onjeom.backend.domain.ai.service;
 import com.onjeom.backend.domain.ai.dto.AvailableProblemDto;
 import com.onjeom.backend.domain.ai.dto.CurriculumPlanAiRequest;
 import com.onjeom.backend.domain.ai.dto.CurriculumPlanAiResponse;
-import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -17,7 +16,7 @@ import java.util.*;
 
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "ai.scoring.enabled", havingValue = "true")
+@Primary
 @RequiredArgsConstructor
 public class AiCurriculumServiceImpl implements AiCurriculumService {
 

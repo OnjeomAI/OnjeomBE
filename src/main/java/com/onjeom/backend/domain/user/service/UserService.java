@@ -27,7 +27,7 @@ public class UserService {
     public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        user.updateProfile(request.nickname(), request.alarmEnabled(), request.dailyGoal());
+        user.updateProfile(request.nickname(), request.alarmEnabled(), request.dailyGoal(), request.fontSize());
         return toResponse(user);
     }
 
@@ -39,7 +39,8 @@ public class UserService {
                 user.getRole().name(),
                 user.getDailyGoal(),
                 user.getAlarmEnabled(),
-                user.getEmailVerified()
+                user.getEmailVerified(),
+                user.getFontSize()
         );
     }
 }

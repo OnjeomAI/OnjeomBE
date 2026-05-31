@@ -1,5 +1,7 @@
 package com.onjeom.backend.domain.user.dto.response;
 
+import com.onjeom.backend.domain.user.enums.FontSize;
+
 public record UserProfileResponse(
         Long userId,
         String email,
@@ -7,5 +9,6 @@ public record UserProfileResponse(
         String role,
         Integer dailyGoal,
         Boolean alarmEnabled,
-        Boolean emailVerified
+        Boolean emailVerified,
+        FontSize fontSize
 ) {}

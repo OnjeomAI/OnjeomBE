@@ -1,8 +1,13 @@
 package com.onjeom.backend.domain.cms.service;
 
 import com.onjeom.backend.domain.cms.dto.request.GenerateProblemRequest;
+import com.onjeom.backend.domain.cms.dto.request.UpdateCurriculumOrderRequest;
 import com.onjeom.backend.domain.cms.dto.request.UpdateKeywordRequest;
 import com.onjeom.backend.domain.cms.dto.response.CmsProblemsResponse;
+import com.onjeom.backend.domain.curriculum.entity.Curriculum;
+import com.onjeom.backend.domain.curriculum.entity.CurriculumItem;
+import com.onjeom.backend.domain.curriculum.repository.CurriculumItemRepository;
+import com.onjeom.backend.domain.curriculum.repository.CurriculumRepository;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
 import com.onjeom.backend.domain.problem.dto.request.ProblemKeywordRequest;
 import com.onjeom.backend.domain.problem.dto.request.UpdateProblemRequest;
@@ -41,6 +46,8 @@ public class CmsService {
     private final ProblemRepository problemRepository;
     private final ProblemKeywordRepository problemKeywordRepository;
     private final ProblemChoiceRepository problemChoiceRepository;
+    private final CurriculumRepository curriculumRepository;
+    private final CurriculumItemRepository curriculumItemRepository;
 
     @Value("${ai.server.url}")
     private String aiServerUrl;
@@ -179,6 +186,12 @@ public class CmsService {
         return responses;
     }
 
+    public void reindexProblem(Long problemId) {
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
+        triggerIndexing(problem);
+    }
+
     private void triggerIndexing(Problem problem) {
         record IndexRequest(String content_id, String passage, String question, String model_answer, java.util.List<String> keywords) {}
         try {
@@ -201,6 +214,27 @@ public class CmsService {
         } catch (Exception e) {
             log.error("벡터 인덱싱 요청 실패 (problemId={}): {}", problem.getId(), e.getMessage());
             problem.updateVectorIndexStatus(VectorIndexStatus.PENDING);
+        }
+    }
+
+    public void reorderCurriculum(Long curriculumId, UpdateCurriculumOrderRequest request) {
+        Curriculum curriculum = curriculumRepository.findById(curriculumId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CURRICULUM_NOT_FOUND));
+
+        List<CurriculumItem> items = curriculumItemRepository
+                .findByCurriculumOrderByStageAscOrderIndexAsc(curriculum);
+
+        Map<Long, CurriculumItem> byProblemId = new java.util.HashMap<>();
+        for (CurriculumItem item : items) {
+            byProblemId.put(item.getProblem().getId(), item);
+        }
+
+        List<Long> problemIds = request.problemIds();
+        for (int i = 0; i < problemIds.size(); i++) {
+            CurriculumItem item = byProblemId.get(problemIds.get(i));
+            if (item != null) {
+                item.updateOrderIndex(i + 1);
+            }
         }
     }
 

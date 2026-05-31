@@ -1,5 +1,6 @@
 package com.onjeom.backend.domain.user.dto.request;
 
+import com.onjeom.backend.domain.user.enums.FontSize;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -9,5 +10,6 @@ import jakarta.validation.constraints.Size;
 public record UpdateProfileRequest(
         @NotBlank @Size(max = 50) String nickname,
         @NotNull Boolean alarmEnabled,
-        @NotNull @Min(5) @Max(20) Integer dailyGoal
+        @NotNull @Min(5) @Max(20) Integer dailyGoal,
+        FontSize fontSize
 ) {}

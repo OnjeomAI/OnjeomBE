@@ -5,6 +5,8 @@ import com.onjeom.backend.domain.dashboard.service.DashboardService;
 import com.onjeom.backend.global.common.ApiResponse;
 import com.onjeom.backend.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -64,5 +66,16 @@ public class DashboardController implements DashboardApi {
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(ApiResponse.success(
                 dashboardService.getAdminStats()));
+    }
+
+    @Override
+    @GetMapping(value = "/admin/dashboard/stats/export", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> exportAdminStats(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        String csv = dashboardService.exportAdminStatsCsv();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"onjeom-stats.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
     }
 }

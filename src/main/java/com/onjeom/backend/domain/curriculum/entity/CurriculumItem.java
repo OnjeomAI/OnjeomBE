@@ -63,4 +63,8 @@ public class CurriculumItem extends BaseTimeEntity {
     public void skip() {
         this.status = CurriculumItemStatus.SKIPPED;
     }
+
+    public void updateOrderIndex(int orderIndex) {
+        this.orderIndex = orderIndex;
+    }
 }

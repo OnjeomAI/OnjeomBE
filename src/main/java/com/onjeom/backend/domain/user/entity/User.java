@@ -1,5 +1,6 @@
 package com.onjeom.backend.domain.user.entity;
 
+import com.onjeom.backend.domain.user.enums.FontSize;
 import com.onjeom.backend.domain.user.enums.UserRole;
 import com.onjeom.backend.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
@@ -46,15 +47,21 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private Boolean alarmEnabled;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private FontSize fontSize = FontSize.MEDIUM;
+
     public void verifyEmail() {
         this.emailVerified = true;
         this.role = UserRole.STUDENT;
     }
 
-    public void updateProfile(String nickname, Boolean alarmEnabled, Integer dailyGoal) {
+    public void updateProfile(String nickname, Boolean alarmEnabled, Integer dailyGoal, FontSize fontSize) {
         this.nickname = nickname;
         this.alarmEnabled = alarmEnabled;
         this.dailyGoal = dailyGoal;
+        if (fontSize != null) this.fontSize = fontSize;
     }
 
     public void updatePassword(String encodedPassword) {

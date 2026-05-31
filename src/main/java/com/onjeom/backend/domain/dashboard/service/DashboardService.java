@@ -216,6 +216,24 @@ public class DashboardService {
         );
     }
 
+    public String exportAdminStatsCsv() {
+        AdminStatsResponse stats = getAdminStats();
+        StringBuilder csv = new StringBuilder();
+        csv.append("항목,값\n");
+        csv.append("전체 사용자 수,").append(stats.totalUsers()).append("\n");
+        csv.append("이번 달 신규 사용자,").append(stats.newUsersThisMonth()).append("\n");
+        csv.append("전체 응답 수,").append(stats.totalResponses()).append("\n");
+        csv.append("이번 달 활성 사용자,").append(stats.activeUsersThisMonth()).append("\n");
+        csv.append("전체 평균 점수,").append(stats.overallAverageScore()).append("\n\n");
+        csv.append("역량,평균 점수,사용자 수\n");
+        for (AdminStatsResponse.CompetencyWeakStat s : stats.competencyStats()) {
+            csv.append(s.type().name()).append(",")
+               .append(s.averageScore()).append(",")
+               .append(s.userCount()).append("\n");
+        }
+        return csv.toString();
+    }
+
     private int calculateStreakDays(List<Response> responses) {
         if (responses.isEmpty()) return 0;
 

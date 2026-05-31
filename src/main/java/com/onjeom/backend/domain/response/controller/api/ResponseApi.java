@@ -32,4 +32,10 @@ public interface ResponseApi {
     ResponseEntity<ApiResponse<?>> getByProblemId(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long problemId);
+
+    @Operation(summary = "내 답변 vs 모범답안 비교", description = "내 답변과 모범답안, 키워드, 피드백을 함께 반환합니다.")
+    @GetMapping("/{responseId}/compare")
+    ResponseEntity<ApiResponse<?>> getCompare(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long responseId);
 }

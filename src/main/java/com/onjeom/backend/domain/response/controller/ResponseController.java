@@ -44,4 +44,13 @@ public class ResponseController implements ResponseApi {
         return ResponseEntity.ok(ApiResponse.success(
                 responseService.getByProblemId(userDetails.getUserId(), problemId)));
     }
+
+    @Override
+    @GetMapping("/{responseId}/compare")
+    public ResponseEntity<ApiResponse<?>> getCompare(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long responseId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                responseService.getCompare(userDetails.getUserId(), responseId)));
+    }
 }

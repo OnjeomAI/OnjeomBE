@@ -284,4 +284,76 @@ output "ecr_repository_url" {
   description = "ECR URL → GitHub Secret: ECR_REGISTRY"
 }
 
+resource "aws_subnet" "private_1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.10.0/24"
+  availability_zone = "ap-northeast-2a"
+  tags              = { Name = "onjeom-private-1" }
+}
 
+resource "aws_subnet" "private_2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.11.0/24"
+  availability_zone = "ap-northeast-2c"
+  tags              = { Name = "onjeom-private-2" }
+}
+
+resource "aws_db_subnet_group" "main" {
+  name       = "onjeom-db-subnet-group"
+  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  tags       = { Name = "onjeom-db-subnet-group" }
+}
+
+resource "aws_security_group" "rds" {
+  name        = "onjeom-rds-sg"
+  description = "RDS only from EC2"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ec2.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "onjeom-rds-sg" }
+}
+
+resource "aws_db_instance" "main" {
+  identifier        = "onjeom-db"
+  engine            = "mysql"
+  engine_version    = "8.0"
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20
+  storage_type      = "gp2"
+
+  db_name  = "onjeom"
+  username = var.db_username
+  password = var.db_password
+
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  multi_az            = false
+  publicly_accessible = false
+  skip_final_snapshot = true
+  deletion_protection = false
+
+  backup_retention_period = 1
+
+  tags = { Name = "onjeom-db" }
+}
+
+variable "db_username" { sensitive = true }
+variable "db_password" { sensitive = true }
+
+output "rds_endpoint" {
+  value = aws_db_instance.main.endpoint
+}

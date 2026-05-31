@@ -1,8 +1,7 @@
 package com.onjeom.backend.domain.auth.controller.api;
 
-import com.onjeom.backend.domain.auth.dto.request.*;
-import com.onjeom.backend.domain.auth.dto.response.LoginResponse;
-import com.onjeom.backend.domain.auth.dto.response.TokenResponse;
+import com.onjeom.backend.domain.auth.dto.request.LoginRequest;
+import com.onjeom.backend.domain.auth.dto.request.SignupRequest;
 import com.onjeom.backend.global.common.ApiResponse;
 import com.onjeom.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,10 +20,6 @@ public interface AuthApi {
     @Operation(summary = "회원가입")
     @PostMapping("/signup")
     ResponseEntity<ApiResponse<?>> signup(@Valid @RequestBody SignupRequest request);
-
-    @Operation(summary = "이메일 OTP 인증")
-    @PostMapping("/email/verify")
-    ResponseEntity<ApiResponse<?>> verifyEmail(@Valid @RequestBody EmailVerifyRequest request);
 
     @Operation(summary = "로그인")
     @PostMapping("/login")
@@ -48,12 +43,4 @@ public interface AuthApi {
     ResponseEntity<ApiResponse<?>> logoutAllDevices(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletRequest request);
-
-    @Operation(summary = "비밀번호 재설정 요청")
-    @PostMapping("/password/reset-request")
-    ResponseEntity<ApiResponse<?>> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDto request);
-
-    @Operation(summary = "비밀번호 재설정")
-    @PostMapping("/password/reset")
-    ResponseEntity<ApiResponse<?>> resetPassword(@Valid @RequestBody PasswordResetDto request);
 }

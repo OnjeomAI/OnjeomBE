@@ -24,9 +24,6 @@ public enum ErrorCode {
     USER_NOT_FOUND(404, "존재하지 않는 사용자입니다."),
     EMAIL_ALREADY_EXISTS(409, "이미 사용중인 이메일입니다."),
     INVALID_PASSWORD(401, "비밀번호가 올바르지 않습니다."),
-    EMAIL_NOT_VERIFIED(403, "이메일 인증이 완료되지 않았습니다."),
-    INVALID_OTP(401, "유효하지 않은 인증 코드입니다."),
-    EXPIRED_OTP(401, "만료된 인증 코드입니다."),
 
     // 문제
     PROBLEM_NOT_FOUND(404, "존재하지 않는 문제입니다."),

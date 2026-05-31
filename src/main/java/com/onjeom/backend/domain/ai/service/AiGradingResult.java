@@ -7,5 +7,6 @@ public record AiGradingResult(
         int stage1Score,
         List<String> foundKeywords,
         List<AiKeyword> missingKeywords,
-        String feedback
+        String feedback,
+        String gradeReason
 ) {}

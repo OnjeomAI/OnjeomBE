@@ -6,6 +6,8 @@ import com.onjeom.backend.domain.problem.enums.ReadingType;
 import com.onjeom.backend.domain.problem.enums.VectorIndexStatus;
 import com.onjeom.backend.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -43,6 +45,18 @@ public class Problem extends BaseTimeEntity {
 
     @Column(nullable = false)
     private Integer difficulty;
+
+    /** 3PL 변별도 파라미터 (미설정 시 null → 1PL 폴백) */
+    @Column(precision = 5, scale = 3)
+    private BigDecimal aParam;
+
+    /** 3PL 난이도 파라미터 (미설정 시 null → difficulty 매핑 사용) */
+    @Column(precision = 5, scale = 3)
+    private BigDecimal bParam;
+
+    /** 3PL 추측도 파라미터 (미설정 시 null → 0.0 고정) */
+    @Column(precision = 5, scale = 3)
+    private BigDecimal cParam;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String modelAnswer;

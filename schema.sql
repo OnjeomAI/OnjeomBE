@@ -19,6 +19,7 @@ CREATE TABLE users (
     daily_goal     INT          NOT NULL,
     email_verified TINYINT(1)   NOT NULL,
     alarm_enabled  TINYINT(1)   NOT NULL,
+    font_size      VARCHAR(10)  NOT NULL DEFAULT 'MEDIUM' COMMENT 'SMALL | MEDIUM | LARGE',
     created_at     DATETIME(6),
     updated_at     DATETIME(6),
     PRIMARY KEY (id),

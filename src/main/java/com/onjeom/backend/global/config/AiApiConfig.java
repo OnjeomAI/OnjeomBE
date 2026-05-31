@@ -1,0 +1,25 @@
+package com.onjeom.backend.global.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestClient;
+
+@Configuration
+@ConditionalOnProperty(name = "ai.scoring.enabled", havingValue = "true")
+public class AiApiConfig {
+
+    @Value("${ai.api.url}")
+    private String aiApiUrl;
+
+    @Bean
+    public RestClient aiRestClient() {
+        return RestClient.builder()
+                .baseUrl(aiApiUrl)
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
+}

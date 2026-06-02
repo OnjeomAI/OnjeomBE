@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,12 +50,6 @@ public class CurriculumService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        curriculumRepository.findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE)
-                .ifPresent(c -> {
-                    c.pause();
-                    curriculumRepository.save(c);
-                });
-
         Map<String, Integer> competencyScores = Map.of(
                 "factual", diagnostic.getFactualScore(),
                 "inferential", diagnostic.getInferentialScore(),
@@ -66,34 +61,7 @@ public class CurriculumService {
         Map<Integer, List<Long>> plan = aiCurriculumService.generateCurriculumPlan(
                 diagnostic.getTheta(), user.getDailyGoal(), competencyScores);
 
-        Curriculum curriculum = Curriculum.builder()
-                .user(user)
-                .diagnostic(diagnostic)
-                .status(CurriculumStatus.ACTIVE)
-                .currentStage(diagnostic.getLevel())
-                .build();
-        curriculumRepository.save(curriculum);
-
-        for (Map.Entry<Integer, List<Long>> entry : plan.entrySet()) {
-            int stage = entry.getKey();
-            List<Long> problemIds = entry.getValue();
-            for (int i = 0; i < problemIds.size(); i++) {
-                Problem problem = problemRepository.findById(problemIds.get(i)).orElse(null);
-                if (problem == null) continue;
-                CurriculumItem item = CurriculumItem.builder()
-                        .curriculum(curriculum)
-                        .problem(problem)
-                        .stage(stage)
-                        .orderIndex(i + 1)
-                        .status(CurriculumItemStatus.PENDING)
-                        .scheduledAt(null)
-                        .completedAt(null)
-                        .build();
-                curriculumItemRepository.save(item);
-            }
-        }
-
-        return curriculum;
+        return buildAndPersistCurriculum(user, diagnostic, plan);
     }
 
     @Transactional(readOnly = true)
@@ -218,42 +186,59 @@ public class CurriculumService {
                 .orElse(null);
         if (diagnostic == null) return;
 
-        Map<String, Integer> competencyScores = new HashMap<>();
-        Arrays.stream(CompetencyType.values()).forEach(type -> {
-            int score = competencyScoreRepository
-                    .findTopByUserAndCompetencyTypeOrderByMeasuredAtDesc(user, type)
-                    .map(cs -> cs.getScore().intValue())
-                    .orElseGet(() -> fallbackDiagnosticScore(diagnostic, type));
-            competencyScores.put(type.name().toLowerCase(), score);
-        });
+        Map<CompetencyType, Integer> latestScores = competencyScoreRepository
+                .findByUserOrderByMeasuredAtDesc(user).stream()
+                .collect(Collectors.toMap(
+                        cs -> cs.getCompetencyType(),
+                        cs -> cs.getScore().intValue(),
+                        (a, b) -> a  // 동일 타입은 최신값 유지
+                ));
 
+        Map<String, Integer> competencyScores = new HashMap<>();
+        for (CompetencyType type : CompetencyType.values()) {
+            int score = latestScores.getOrDefault(type, fallbackDiagnosticScore(diagnostic, type));
+            competencyScores.put(type.name().toLowerCase(), score);
+        }
+
+        Map<Integer, List<Long>> plan = aiCurriculumService.generateCurriculumPlan(
+                diagnostic.getTheta(), user.getDailyGoal(), competencyScores);
+
+        buildAndPersistCurriculum(user, diagnostic, plan);
+    }
+
+    private Curriculum buildAndPersistCurriculum(User user, DiagnosticResult diagnostic,
+                                                  Map<Integer, List<Long>> plan) {
         curriculumRepository.findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE)
                 .ifPresent(c -> {
                     c.pause();
                     curriculumRepository.save(c);
                 });
 
-        Map<Integer, List<Long>> plan = aiCurriculumService.generateCurriculumPlan(
-                diagnostic.getTheta(), user.getDailyGoal(), competencyScores);
+        int startStage = plan.isEmpty() ? diagnostic.getLevel()
+                : plan.keySet().stream().min(Integer::compareTo).orElse(diagnostic.getLevel());
 
-        Curriculum newCurriculum = Curriculum.builder()
+        Curriculum curriculum = Curriculum.builder()
                 .user(user)
                 .diagnostic(diagnostic)
                 .status(CurriculumStatus.ACTIVE)
-                .currentStage(diagnostic.getLevel())
+                .currentStage(startStage)
                 .build();
-        curriculumRepository.save(newCurriculum);
+        curriculumRepository.save(curriculum);
+
+        List<Long> allProblemIds = plan.values().stream().flatMap(List::stream).toList();
+        Map<Long, Problem> problemMap = problemRepository.findAllById(allProblemIds).stream()
+                .collect(Collectors.toMap(Problem::getId, p -> p));
 
         for (Map.Entry<Integer, List<Long>> entry : plan.entrySet()) {
-            int planStage = entry.getKey();
+            int stage = entry.getKey();
             List<Long> problemIds = entry.getValue();
             for (int i = 0; i < problemIds.size(); i++) {
-                Problem problem = problemRepository.findById(problemIds.get(i)).orElse(null);
+                Problem problem = problemMap.get(problemIds.get(i));
                 if (problem == null) continue;
                 curriculumItemRepository.save(CurriculumItem.builder()
-                        .curriculum(newCurriculum)
+                        .curriculum(curriculum)
                         .problem(problem)
-                        .stage(planStage)
+                        .stage(stage)
                         .orderIndex(i + 1)
                         .status(CurriculumItemStatus.PENDING)
                         .scheduledAt(null)
@@ -261,6 +246,8 @@ public class CurriculumService {
                         .build());
             }
         }
+
+        return curriculum;
     }
 
     private int fallbackDiagnosticScore(DiagnosticResult diagnostic, CompetencyType type) {

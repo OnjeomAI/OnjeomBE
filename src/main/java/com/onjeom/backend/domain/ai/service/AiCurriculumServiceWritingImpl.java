@@ -80,7 +80,7 @@ public class AiCurriculumServiceWritingImpl implements AiCurriculumService {
             }
         }
 
-        int nextStage = plan.size() + 1;
+        int nextStage = plan.isEmpty() ? 1 : Collections.max(plan.keySet()) + 1;
         for (ReadingType rt : List.of(ReadingType.VOCABULARY, ReadingType.LOGICAL)) {
             List<Long> ids = problemRepository.findByReadingType(rt)
                     .stream().map(Problem::getId).toList();

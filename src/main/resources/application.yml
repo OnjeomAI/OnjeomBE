@@ -1,3 +1,16 @@
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+
+ai:
+  scoring:
+    enabled: ${AI_SCORING_ENABLED:false}
+  api:
+    url: ${AI_API_URL:http://localhost:8000}
+  server:
+    url: ${AI_SERVER_URL:http://localhost:8000}
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-32-bytes-long}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}

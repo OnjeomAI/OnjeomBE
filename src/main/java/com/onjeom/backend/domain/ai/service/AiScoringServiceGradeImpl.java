@@ -27,13 +27,13 @@ public class AiScoringServiceGradeImpl implements AiScoringService {
                                        String modelAnswer, List<AiKeyword> keywords,
                                        String userAnswer, String readingType) {
         record GradeRequest(String passage, String question, String model_answer,
-                            List<AiKeyword> keywords, String student_answer) {}
+                            List<AiKeyword> keywords, String student_answer, String reading_type) {}
 
         try {
             AiGradingResponse response = restClient.post()
                     .uri("/api/grading/grade")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new GradeRequest(passageText, questionText, modelAnswer, keywords, userAnswer))
+                    .body(new GradeRequest(passageText, questionText, modelAnswer, keywords, userAnswer, readingType))
                     .retrieve()
                     .body(AiGradingResponse.class);
 

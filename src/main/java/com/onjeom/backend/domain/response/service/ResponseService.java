@@ -87,6 +87,13 @@ public class ResponseService {
                 response.getFinalScore()
         );
 
+        competencyScoreService.adjustForErrorTypes(
+                userId,
+                response.getProblem().getReadingType(),
+                response.getFinalScore(),
+                result.errorTypes()
+        );
+
         if (response.getFinalScore() < 60) {
             reviewScheduleService.createOrUpdateSchedule(
                     userId,

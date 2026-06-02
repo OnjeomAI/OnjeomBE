@@ -41,11 +41,21 @@ public class DiagnosticService {
     private final Map<Long, List<Long>> diagnosticSessions = new ConcurrentHashMap<>();
     private final Map<Long, List<Integer>> diagnosticScores = new ConcurrentHashMap<>();
 
+    private static final List<ReadingType> SLOT_TYPES = List.of(
+            ReadingType.FACTUAL,     ReadingType.FACTUAL,
+            ReadingType.INFERENTIAL, ReadingType.INFERENTIAL,
+            ReadingType.CRITICAL,    ReadingType.CRITICAL,
+            ReadingType.VOCABULARY,  ReadingType.VOCABULARY,
+            ReadingType.LOGICAL,     ReadingType.LOGICAL
+    );
+
     public DiagnosticProblemResponse getFirstProblem(Long userId) {
         diagnosticSessions.remove(userId);
         diagnosticScores.remove(userId);
 
-        List<Problem> problems = problemRepository.findByDifficulty(3);
+        List<Problem> problems = problemRepository.findByReadingTypeAndDifficulty(ReadingType.FACTUAL, 3);
+        if (problems.isEmpty()) problems = problemRepository.findByReadingType(ReadingType.FACTUAL);
+        if (problems.isEmpty()) problems = problemRepository.findByDifficulty(3);
         if (problems.isEmpty()) throw new CustomException(ErrorCode.NO_PROBLEM_AVAILABLE);
 
         Problem first = problems.get(new Random().nextInt(problems.size()));
@@ -127,6 +137,8 @@ public class DiagnosticService {
 
     private DiagnosticNextProblemResponse selectNextProblem(
             List<Long> session, List<Integer> scores, int lastScore) {
+        ReadingType nextType = SLOT_TYPES.get(scores.size());
+
         Problem lastProblem = problemRepository.findById(session.get(session.size() - 1))
                 .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
         int currentDiff = lastProblem.getDifficulty();
@@ -134,10 +146,15 @@ public class DiagnosticService {
                 ? Math.min(currentDiff + 1, 5)
                 : Math.max(currentDiff - 1, 1);
 
-        List<Problem> candidates = problemRepository.findByDifficulty(nextDiff).stream()
+        List<Problem> candidates = problemRepository.findByReadingTypeAndDifficulty(nextType, nextDiff).stream()
                 .filter(p -> !session.contains(p.getId()))
                 .toList();
 
+        if (candidates.isEmpty()) {
+            candidates = problemRepository.findByReadingType(nextType).stream()
+                    .filter(p -> !session.contains(p.getId()))
+                    .toList();
+        }
         if (candidates.isEmpty()) {
             candidates = problemRepository.findAll().stream()
                     .filter(p -> !session.contains(p.getId()))

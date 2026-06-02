@@ -119,6 +119,7 @@ public class CompetencyScoreService {
 
     public void adjustForErrorTypes(Long userId, ReadingType problemType, int finalScore, List<String> errorTypes) {
         if (errorTypes == null || errorTypes.isEmpty()) return;
+        if (problemType == ReadingType.CREATIVE) return;
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

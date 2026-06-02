@@ -25,7 +25,7 @@ public class AiScoringServiceGradeImpl implements AiScoringService {
     @Override
     public AiGradingResult scoreAnswer(String passageText, String questionText,
                                        String modelAnswer, List<AiKeyword> keywords,
-                                       String userAnswer) {
+                                       String userAnswer, String readingType) {
         record GradeRequest(String passage, String question, String model_answer,
                             List<AiKeyword> keywords, String student_answer) {}
 
@@ -39,7 +39,7 @@ public class AiScoringServiceGradeImpl implements AiScoringService {
 
             if (response == null) {
                 log.error("AI 채점 서버 응답 없음, fallback 반환");
-                return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "");
+                return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "", List.of());
             }
 
             return new AiGradingResult(
@@ -48,11 +48,12 @@ public class AiScoringServiceGradeImpl implements AiScoringService {
                     response.found_keywords(),
                     response.missing_keywords(),
                     response.feedback(),
-                    ""
+                    "",
+                    List.of()
             );
         } catch (Exception e) {
             log.error("AI 채점 서버 호출 실패, fallback 반환: {}", e.getMessage());
-            return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "");
+            return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "", List.of());
         }
     }
 

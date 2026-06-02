@@ -37,6 +37,11 @@ public class CompetencyScoreService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // CREATIVE는 커리큘럼 심화 콘텐츠 전용 — 역량 점수 미반영
+        if (readingType == ReadingType.CREATIVE) {
+            return latestScores(user);
+        }
+
         CompetencyType competencyType = readingTypeToCompetencyType(readingType);
 
         KnowledgeTracing kt = knowledgeTracingRepository
@@ -112,12 +117,40 @@ public class CompetencyScoreService {
                 .toList();
     }
 
+    public void adjustForErrorTypes(Long userId, ReadingType problemType, int finalScore, List<String> errorTypes) {
+        if (errorTypes == null || errorTypes.isEmpty()) return;
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        CompetencyType problemCompetency = readingTypeToCompetencyType(problemType);
+
+        for (String errorType : errorTypes) {
+            CompetencyType target = switch (errorType) {
+                case "어휘 부족" -> CompetencyType.VOCABULARY;
+                case "논리 비약" -> CompetencyType.LOGICAL;
+                default -> null;
+            };
+            if (target == null || target == problemCompetency) continue;
+
+            ReadingType targetReadingType = switch (target) {
+                case VOCABULARY -> ReadingType.VOCABULARY;
+                case LOGICAL    -> ReadingType.LOGICAL;
+                default -> null;
+            };
+            if (targetReadingType == null) continue;
+
+            updateAfterResponse(userId, targetReadingType, finalScore);
+        }
+    }
+
     private CompetencyType readingTypeToCompetencyType(ReadingType readingType) {
         return switch (readingType) {
             case FACTUAL     -> CompetencyType.FACTUAL;
             case INFERENTIAL -> CompetencyType.INFERENTIAL;
-            case CRITICAL    -> CompetencyType.CRITICAL;
-            case CREATIVE    -> CompetencyType.LOGICAL;
+            case CRITICAL, CREATIVE -> CompetencyType.CRITICAL;
+            case VOCABULARY  -> CompetencyType.VOCABULARY;
+            case LOGICAL     -> CompetencyType.LOGICAL;
         };
     }
 

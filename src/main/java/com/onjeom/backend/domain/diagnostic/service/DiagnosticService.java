@@ -9,6 +9,8 @@ import com.onjeom.backend.domain.diagnostic.dto.response.DiagnosticProblemRespon
 import com.onjeom.backend.domain.diagnostic.dto.response.DiagnosticResultResponse;
 import com.onjeom.backend.domain.diagnostic.entity.DiagnosticResult;
 import com.onjeom.backend.domain.diagnostic.repository.DiagnosticResultRepository;
+import com.onjeom.backend.domain.learning.enums.CompetencyType;
+import com.onjeom.backend.domain.learning.repository.CompetencyScoreRepository;
 import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.enums.ReadingType;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
@@ -25,6 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,15 +40,77 @@ public class DiagnosticService {
     private final AiScoringService aiScoringService;
     private final CurriculumService curriculumService;
     private final UserRepository userRepository;
+    private final CompetencyScoreRepository competencyScoreRepository;
 
     private final Map<Long, List<Long>> diagnosticSessions = new ConcurrentHashMap<>();
     private final Map<Long, List<Integer>> diagnosticScores = new ConcurrentHashMap<>();
+    private final Map<Long, List<ReadingType>> diagnosticSlots = new ConcurrentHashMap<>();
+
+    private static final List<ReadingType> DEFAULT_SLOT_TYPES = List.of(
+            ReadingType.FACTUAL,     ReadingType.FACTUAL,
+            ReadingType.INFERENTIAL, ReadingType.INFERENTIAL,
+            ReadingType.CRITICAL,    ReadingType.CRITICAL,
+            ReadingType.VOCABULARY,  ReadingType.VOCABULARY,
+            ReadingType.LOGICAL,     ReadingType.LOGICAL
+    );
+
+    private static final Map<CompetencyType, ReadingType> COMPETENCY_TO_READING = Map.of(
+            CompetencyType.FACTUAL,     ReadingType.FACTUAL,
+            CompetencyType.INFERENTIAL, ReadingType.INFERENTIAL,
+            CompetencyType.CRITICAL,    ReadingType.CRITICAL,
+            CompetencyType.VOCABULARY,  ReadingType.VOCABULARY,
+            CompetencyType.LOGICAL,     ReadingType.LOGICAL
+    );
+
+    private List<ReadingType> buildSlotTypes(User user) {
+        List<com.onjeom.backend.domain.learning.entity.CompetencyScore> allScores =
+                competencyScoreRepository.findByUserOrderByMeasuredAtDesc(user);
+
+        if (allScores.isEmpty()) return DEFAULT_SLOT_TYPES;
+
+        Map<CompetencyType, Integer> scores = allScores.stream()
+                .collect(Collectors.toMap(
+                        cs -> cs.getCompetencyType(),
+                        cs -> cs.getScore().intValue(),
+                        (a, b) -> a  // 동일 타입은 최신값 유지
+                ));
+
+        Arrays.stream(CompetencyType.values())
+                .filter(t -> !scores.containsKey(t))
+                .forEach(t -> scores.put(t, 50));
+
+        // 취약순 정렬 후 weakest 3문제, 나머지 2·2·2·1 배분 (합계 10)
+        List<CompetencyType> sorted = Arrays.stream(CompetencyType.values())
+                .sorted(Comparator.comparingInt(scores::get))
+                .toList();
+
+        int[] counts = {3, 2, 2, 2, 1};
+        List<ReadingType> slots = new ArrayList<>();
+        for (int i = 0; i < sorted.size(); i++) {
+            ReadingType rt = COMPETENCY_TO_READING.get(sorted.get(i));
+            for (int j = 0; j < counts[i]; j++) slots.add(rt);
+        }
+
+        log.info("재진단 슬롯 배분 (userId={}): {}", user.getId(),
+                slots.stream().map(ReadingType::name).toList());
+        return slots;
+    }
 
     public DiagnosticProblemResponse getFirstProblem(Long userId) {
         diagnosticSessions.remove(userId);
         diagnosticScores.remove(userId);
+        diagnosticSlots.remove(userId);
 
-        List<Problem> problems = problemRepository.findByDifficulty(3);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        List<ReadingType> slots = buildSlotTypes(user);
+        diagnosticSlots.put(userId, slots);
+
+        ReadingType firstType = slots.get(0);
+        List<Problem> problems = problemRepository.findByReadingTypeAndDifficulty(firstType, 3);
+        if (problems.isEmpty()) problems = problemRepository.findByReadingType(firstType);
+        if (problems.isEmpty()) problems = problemRepository.findByDifficulty(3);
         if (problems.isEmpty()) throw new CustomException(ErrorCode.NO_PROBLEM_AVAILABLE);
 
         Problem first = problems.get(new Random().nextInt(problems.size()));
@@ -71,14 +136,15 @@ public class DiagnosticService {
 
         int score = aiScoringService.scoreAnswer(
                 problem.getPassageText(), problem.getQuestionText(),
-                problem.getModelAnswer(), List.of(), request.answerText()).score();
+                problem.getModelAnswer(), List.of(), request.answerText(),
+                problem.getReadingType().name()).score();
         scores.add(score);
 
         if (scores.size() == 10) {
             return completeSession(userId, session, scores);
         }
 
-        return selectNextProblem(session, scores, score);
+        return selectNextProblem(userId, session, scores, score);
     }
 
     @Transactional(readOnly = true)
@@ -121,12 +187,16 @@ public class DiagnosticService {
 
         diagnosticSessions.remove(userId);
         diagnosticScores.remove(userId);
+        diagnosticSlots.remove(userId);
 
         return new DiagnosticNextProblemResponse(true, null, toResultResponse(result, curriculum.getId()));
     }
 
     private DiagnosticNextProblemResponse selectNextProblem(
-            List<Long> session, List<Integer> scores, int lastScore) {
+            Long userId, List<Long> session, List<Integer> scores, int lastScore) {
+        List<ReadingType> slots = diagnosticSlots.getOrDefault(userId, DEFAULT_SLOT_TYPES);
+        ReadingType nextType = slots.get(scores.size());
+
         Problem lastProblem = problemRepository.findById(session.get(session.size() - 1))
                 .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
         int currentDiff = lastProblem.getDifficulty();
@@ -134,10 +204,15 @@ public class DiagnosticService {
                 ? Math.min(currentDiff + 1, 5)
                 : Math.max(currentDiff - 1, 1);
 
-        List<Problem> candidates = problemRepository.findByDifficulty(nextDiff).stream()
+        List<Problem> candidates = problemRepository.findByReadingTypeAndDifficulty(nextType, nextDiff).stream()
                 .filter(p -> !session.contains(p.getId()))
                 .toList();
 
+        if (candidates.isEmpty()) {
+            candidates = problemRepository.findByReadingType(nextType).stream()
+                    .filter(p -> !session.contains(p.getId()))
+                    .toList();
+        }
         if (candidates.isEmpty()) {
             candidates = problemRepository.findAll().stream()
                     .filter(p -> !session.contains(p.getId()))
@@ -204,6 +279,7 @@ public class DiagnosticService {
         Map<String, List<Integer>> byType = new HashMap<>();
         for (int i = 0; i < Math.min(problems.size(), scores.size()); i++) {
             String key = readingTypeToKey(problems.get(i).getReadingType());
+            if (key == null) continue;  // CREATIVE는 역량 미반영
             byType.computeIfAbsent(key, k -> new ArrayList<>()).add(scores.get(i));
         }
 
@@ -213,16 +289,19 @@ public class DiagnosticService {
         result.put("factual",     avg(byType.getOrDefault("factual",     List.of(totalAvg))));
         result.put("inferential", avg(byType.getOrDefault("inferential", List.of(totalAvg))));
         result.put("critical",    avg(byType.getOrDefault("critical",    List.of(totalAvg))));
-        result.put("vocabulary",  totalAvg);
-        result.put("logical",     totalAvg);
+        result.put("vocabulary",  avg(byType.getOrDefault("vocabulary",  List.of(totalAvg))));
+        result.put("logical",     avg(byType.getOrDefault("logical",     List.of(totalAvg))));
         return result;
     }
 
     private String readingTypeToKey(ReadingType type) {
         return switch (type) {
-            case FACTUAL      -> "factual";
-            case INFERENTIAL  -> "inferential";
-            case CRITICAL, CREATIVE -> "critical";
+            case FACTUAL     -> "factual";
+            case INFERENTIAL -> "inferential";
+            case CRITICAL    -> "critical";
+            case CREATIVE    -> null;  // 역량 미반영 — 심화 콘텐츠 전용
+            case VOCABULARY  -> "vocabulary";
+            case LOGICAL     -> "logical";
         };
     }
 

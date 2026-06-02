@@ -6,5 +6,5 @@ public interface AiScoringService {
 
     AiGradingResult scoreAnswer(String passageText, String questionText,
                                 String modelAnswer, List<AiKeyword> keywords,
-                                String userAnswer);
+                                String userAnswer, String readingType);
 }

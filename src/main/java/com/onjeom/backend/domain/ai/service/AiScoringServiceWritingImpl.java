@@ -23,14 +23,14 @@ public class AiScoringServiceWritingImpl implements AiScoringService {
     @Override
     public AiGradingResult scoreAnswer(String passageText, String questionText,
                                        String modelAnswer, List<AiKeyword> keywords,
-                                       String userAnswer) {
+                                       String userAnswer, String readingType) {
         List<KeywordDto> keywordDtos = (keywords == null ? List.<AiKeyword>of() : keywords)
                 .stream()
                 .map(k -> new KeywordDto(k.keyword(), k.weight()))
                 .toList();
 
         WritingEvaluateRequest request = new WritingEvaluateRequest(
-                passageText, questionText, modelAnswer, userAnswer, keywordDtos
+                passageText, questionText, modelAnswer, userAnswer, keywordDtos, readingType
         );
 
         try {
@@ -42,7 +42,7 @@ public class AiScoringServiceWritingImpl implements AiScoringService {
 
             if (response == null) {
                 log.warn("AI API 응답이 null입니다. 기본값 반환");
-                return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 응답 없음", "");
+                return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 응답 없음", "", List.of());
             }
 
             log.info("AI 채점 완료 - finalScore={}, feedbackType={}", response.finalScore(), response.feedbackType());
@@ -50,6 +50,9 @@ public class AiScoringServiceWritingImpl implements AiScoringService {
             int stage1Score = response.keywordScore() != null ? response.keywordScore() : response.finalScore();
             List<AiKeyword> missingKeywords = response.missingKeywords() == null ? List.of()
                     : response.missingKeywords().stream().map(k -> new AiKeyword(k, 0)).toList();
+            List<String> errorTypes = response.deepAnalysis() != null && response.deepAnalysis().errorTypes() != null
+                    ? response.deepAnalysis().errorTypes()
+                    : List.of();
 
             return new AiGradingResult(
                     response.finalScore(),
@@ -57,12 +60,13 @@ public class AiScoringServiceWritingImpl implements AiScoringService {
                     response.matchedKeywords() != null ? response.matchedKeywords() : List.of(),
                     missingKeywords,
                     response.feedback(),
-                    response.feedbackType()
+                    response.feedbackType(),
+                    errorTypes
             );
 
         } catch (RestClientException e) {
             log.error("AI API 호출 실패, 폴백 반환: {}", e.getMessage());
-            return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "");
+            return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "", List.of());
         }
     }
 }

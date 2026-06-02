@@ -34,7 +34,7 @@ public class AiGradingServiceImpl implements AiGradingService {
 
             if (response == null) {
                 log.error("AI 채점 서버 응답 없음, fallback 반환");
-                return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "");
+                return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "", List.of());
             }
 
             log.info("AI 진단 채점 완료 - score={}", response.score());
@@ -46,11 +46,12 @@ public class AiGradingServiceImpl implements AiGradingService {
                             .map(k -> new AiKeyword(k.keyword(), k.weight()))
                             .toList(),
                     response.feedback(),
-                    response.grade_reason()
+                    response.grade_reason(),
+                    List.of()
             );
         } catch (Exception e) {
             log.error("AI 채점 서버 호출 실패, fallback 반환: {}", e.getMessage());
-            return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "");
+            return new AiGradingResult(50, 50, List.of(), List.of(), "채점 서버 연결 실패", "", List.of());
         }
     }
 

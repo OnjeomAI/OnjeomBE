@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface CurriculumItemRepository extends JpaRepository<CurriculumItem, Long> {
 
+    void deleteByProblemId(Long problemId);
+
     List<CurriculumItem> findByCurriculumOrderByStageAscOrderIndexAsc(Curriculum curriculum);
 
     List<CurriculumItem> findByCurriculumAndStage(Curriculum curriculum, Integer stage);

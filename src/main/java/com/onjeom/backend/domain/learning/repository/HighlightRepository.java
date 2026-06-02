@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface HighlightRepository extends JpaRepository<Highlight, Long> {
 
+    void deleteByProblem(Problem problem);
+
     List<Highlight> findByUserAndProblem(User user, Problem problem);
 
     Optional<Highlight> findByUserAndProblemAndStartOffsetAndEndOffset(

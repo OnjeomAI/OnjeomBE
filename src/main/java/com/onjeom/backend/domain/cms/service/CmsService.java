@@ -8,6 +8,9 @@ import com.onjeom.backend.domain.curriculum.entity.Curriculum;
 import com.onjeom.backend.domain.curriculum.entity.CurriculumItem;
 import com.onjeom.backend.domain.curriculum.repository.CurriculumItemRepository;
 import com.onjeom.backend.domain.curriculum.repository.CurriculumRepository;
+import com.onjeom.backend.domain.learning.repository.HighlightRepository;
+import com.onjeom.backend.domain.learning.repository.ReviewScheduleRepository;
+import com.onjeom.backend.domain.response.repository.ResponseRepository;
 import com.onjeom.backend.domain.problem.dto.request.CreateProblemRequest;
 import com.onjeom.backend.domain.problem.dto.request.ProblemKeywordRequest;
 import com.onjeom.backend.domain.problem.dto.request.UpdateProblemRequest;
@@ -50,6 +53,9 @@ public class CmsService {
     private final ProblemChoiceRepository problemChoiceRepository;
     private final CurriculumRepository curriculumRepository;
     private final CurriculumItemRepository curriculumItemRepository;
+    private final ResponseRepository responseRepository;
+    private final ReviewScheduleRepository reviewScheduleRepository;
+    private final HighlightRepository highlightRepository;
 
     @Value("${ai.server.url}")
     private String aiServerUrl;
@@ -257,6 +263,11 @@ public class CmsService {
     public void deleteProblem(Long problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
+        // 외래키 참조 순서대로 삭제
+        highlightRepository.deleteByProblem(problem);
+        reviewScheduleRepository.deleteByProblem(problem);
+        responseRepository.deleteByProblemId(problemId);
+        curriculumItemRepository.deleteByProblemId(problemId);
         problemKeywordRepository.deleteAllByProblemId(problemId);
         problemChoiceRepository.deleteAllByProblemId(problemId);
         problemRepository.delete(problem);

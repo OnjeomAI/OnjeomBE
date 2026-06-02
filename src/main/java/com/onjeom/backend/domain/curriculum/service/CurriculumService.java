@@ -61,7 +61,9 @@ public class CurriculumService {
         Map<Integer, List<Long>> plan = aiCurriculumService.generateCurriculumPlan(
                 diagnostic.getTheta(), user.getDailyGoal(), competencyScores);
 
-        return buildAndPersistCurriculum(user, diagnostic, plan);
+        Curriculum curriculum = buildAndPersistCurriculum(user, diagnostic, plan);
+        if (curriculum == null) throw new CustomException(ErrorCode.AI_SERVER_ERROR);
+        return curriculum;
     }
 
     @Transactional(readOnly = true)
@@ -214,8 +216,12 @@ public class CurriculumService {
                     curriculumRepository.save(c);
                 });
 
-        int startStage = plan.isEmpty() ? diagnostic.getLevel()
-                : plan.keySet().stream().min(Integer::compareTo).orElse(diagnostic.getLevel());
+        if (plan.isEmpty()) {
+            log.warn("커리큘럼 플랜이 비어있음 — 커리큘럼 생성 건너뜀 (userId={})", user.getId());
+            return null;
+        }
+
+        int startStage = plan.keySet().stream().min(Integer::compareTo).orElse(diagnostic.getLevel());
 
         Curriculum curriculum = Curriculum.builder()
                 .user(user)

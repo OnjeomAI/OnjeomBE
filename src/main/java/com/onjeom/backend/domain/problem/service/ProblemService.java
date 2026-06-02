@@ -39,7 +39,15 @@ public class ProblemService {
         return toDetailResponse(problem, keywords);
     }
 
+    private static final java.util.Set<ReadingType> ACTIVE_READING_TYPES = java.util.Set.of(
+            ReadingType.FACTUAL, ReadingType.INFERENTIAL,
+            ReadingType.CRITICAL, ReadingType.CREATIVE
+    );
+
     public List<ProblemResponse> getProblemsByReadingType(ReadingType readingType) {
+        if (!ACTIVE_READING_TYPES.contains(readingType)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
         return problemRepository.findByReadingType(readingType).stream()
                 .map(this::toResponse)
                 .toList();

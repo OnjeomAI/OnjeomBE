@@ -11,6 +11,9 @@ import com.onjeom.backend.domain.curriculum.repository.CurriculumItemRepository;
 import com.onjeom.backend.domain.curriculum.repository.CurriculumRepository;
 import com.onjeom.backend.domain.ai.service.AiCurriculumService;
 import com.onjeom.backend.domain.diagnostic.entity.DiagnosticResult;
+import com.onjeom.backend.domain.diagnostic.repository.DiagnosticResultRepository;
+import com.onjeom.backend.domain.learning.enums.CompetencyType;
+import com.onjeom.backend.domain.learning.repository.CompetencyScoreRepository;
 import com.onjeom.backend.domain.problem.entity.Problem;
 import com.onjeom.backend.domain.problem.repository.ProblemRepository;
 import com.onjeom.backend.domain.user.entity.User;
@@ -18,13 +21,17 @@ import com.onjeom.backend.domain.user.repository.UserRepository;
 import com.onjeom.backend.global.exception.CustomException;
 import com.onjeom.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -35,6 +42,8 @@ public class CurriculumService {
     private final ProblemRepository problemRepository;
     private final AiCurriculumService aiCurriculumService;
     private final UserRepository userRepository;
+    private final CompetencyScoreRepository competencyScoreRepository;
+    private final DiagnosticResultRepository diagnosticResultRepository;
 
     public Curriculum createCurriculum(Long userId, DiagnosticResult diagnostic) {
         User user = userRepository.findById(userId)
@@ -184,7 +193,84 @@ public class CurriculumService {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
         item.complete();
+
+        int stage = item.getStage();
+        boolean stageComplete = curriculumItemRepository
+                .findByCurriculumOrderByStageAscOrderIndexAsc(item.getCurriculum()).stream()
+                .filter(i -> i.getStage().equals(stage))
+                .allMatch(i -> i.getStatus() == CurriculumItemStatus.COMPLETED
+                        || i.getStatus() == CurriculumItemStatus.SKIPPED);
+
+        if (stageComplete) {
+            log.info("스테이지 {} 완료 → 역량 기반 커리큘럼 재생성 (userId={})", stage, userId);
+            refreshCurriculumWithCurrentScores(userId);
+        }
+
         return toItemResponse(item);
+    }
+
+    private void refreshCurriculumWithCurrentScores(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        DiagnosticResult diagnostic = diagnosticResultRepository
+                .findTopByUserOrderByCreatedAtDesc(user)
+                .orElse(null);
+        if (diagnostic == null) return;
+
+        Map<String, Integer> competencyScores = new HashMap<>();
+        Arrays.stream(CompetencyType.values()).forEach(type -> {
+            int score = competencyScoreRepository
+                    .findTopByUserAndCompetencyTypeOrderByMeasuredAtDesc(user, type)
+                    .map(cs -> cs.getScore().intValue())
+                    .orElseGet(() -> fallbackDiagnosticScore(diagnostic, type));
+            competencyScores.put(type.name().toLowerCase(), score);
+        });
+
+        curriculumRepository.findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE)
+                .ifPresent(c -> {
+                    c.pause();
+                    curriculumRepository.save(c);
+                });
+
+        Map<Integer, List<Long>> plan = aiCurriculumService.generateCurriculumPlan(
+                diagnostic.getTheta(), user.getDailyGoal(), competencyScores);
+
+        Curriculum newCurriculum = Curriculum.builder()
+                .user(user)
+                .diagnostic(diagnostic)
+                .status(CurriculumStatus.ACTIVE)
+                .currentStage(diagnostic.getLevel())
+                .build();
+        curriculumRepository.save(newCurriculum);
+
+        for (Map.Entry<Integer, List<Long>> entry : plan.entrySet()) {
+            int planStage = entry.getKey();
+            List<Long> problemIds = entry.getValue();
+            for (int i = 0; i < problemIds.size(); i++) {
+                Problem problem = problemRepository.findById(problemIds.get(i)).orElse(null);
+                if (problem == null) continue;
+                curriculumItemRepository.save(CurriculumItem.builder()
+                        .curriculum(newCurriculum)
+                        .problem(problem)
+                        .stage(planStage)
+                        .orderIndex(i + 1)
+                        .status(CurriculumItemStatus.PENDING)
+                        .scheduledAt(null)
+                        .completedAt(null)
+                        .build());
+            }
+        }
+    }
+
+    private int fallbackDiagnosticScore(DiagnosticResult diagnostic, CompetencyType type) {
+        return switch (type) {
+            case FACTUAL     -> diagnostic.getFactualScore();
+            case INFERENTIAL -> diagnostic.getInferentialScore();
+            case CRITICAL    -> diagnostic.getCriticalScore();
+            case VOCABULARY  -> diagnostic.getVocabularyScore();
+            case LOGICAL     -> diagnostic.getLogicalScore();
+        };
     }
 
     private CurriculumItemResponse toItemResponse(CurriculumItem item) {

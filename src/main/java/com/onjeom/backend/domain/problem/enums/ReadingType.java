@@ -1,5 +1,5 @@
 package com.onjeom.backend.domain.problem.enums;
 
 public enum ReadingType {
-    FACTUAL, INFERENTIAL, CRITICAL, CREATIVE
+    FACTUAL, INFERENTIAL, CRITICAL, CREATIVE, VOCABULARY, LOGICAL
 }

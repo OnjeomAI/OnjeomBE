@@ -116,8 +116,9 @@ public class CompetencyScoreService {
         return switch (readingType) {
             case FACTUAL     -> CompetencyType.FACTUAL;
             case INFERENTIAL -> CompetencyType.INFERENTIAL;
-            case CRITICAL    -> CompetencyType.CRITICAL;
-            case CREATIVE    -> CompetencyType.LOGICAL;
+            case CRITICAL, CREATIVE -> CompetencyType.CRITICAL;
+            case VOCABULARY  -> CompetencyType.VOCABULARY;
+            case LOGICAL     -> CompetencyType.LOGICAL;
         };
     }
 

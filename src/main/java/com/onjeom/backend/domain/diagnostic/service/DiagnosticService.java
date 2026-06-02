@@ -136,7 +136,8 @@ public class DiagnosticService {
 
         int score = aiScoringService.scoreAnswer(
                 problem.getPassageText(), problem.getQuestionText(),
-                problem.getModelAnswer(), List.of(), request.answerText()).score();
+                problem.getModelAnswer(), List.of(), request.answerText(),
+                problem.getReadingType().name()).score();
         scores.add(score);
 
         if (scores.size() == 10) {

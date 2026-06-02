@@ -79,6 +79,15 @@ public class AiCurriculumServiceWritingImpl implements AiCurriculumService {
                 plan.put(stage, ids.subList(0, Math.min(perStage, ids.size())));
             }
         }
+
+        int nextStage = plan.size() + 1;
+        for (ReadingType rt : List.of(ReadingType.VOCABULARY, ReadingType.LOGICAL)) {
+            List<Long> ids = problemRepository.findByReadingType(rt)
+                    .stream().map(Problem::getId).toList();
+            if (!ids.isEmpty()) {
+                plan.put(nextStage++, ids.subList(0, Math.min(perStage, ids.size())));
+            }
+        }
         return plan;
     }
 

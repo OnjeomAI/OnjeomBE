@@ -1,7 +1,10 @@
 package com.onjeom.backend.domain.dashboard.service;
 
 import com.onjeom.backend.domain.dashboard.dto.response.*;
+import com.onjeom.backend.domain.diagnostic.entity.DiagnosticResult;
+import com.onjeom.backend.domain.diagnostic.repository.DiagnosticResultRepository;
 import com.onjeom.backend.domain.learning.entity.CompetencyScore;
+import com.onjeom.backend.domain.learning.enums.CompetencyLevel;
 import com.onjeom.backend.domain.learning.enums.CompetencyType;
 import com.onjeom.backend.domain.learning.repository.CompetencyScoreRepository;
 import com.onjeom.backend.domain.learning.repository.ReviewScheduleRepository;
@@ -35,6 +38,7 @@ public class DashboardService {
     private final ResponseRepository responseRepository;
     private final CompetencyScoreRepository competencyScoreRepository;
     private final ReviewScheduleRepository reviewScheduleRepository;
+    private final DiagnosticResultRepository diagnosticResultRepository;
 
     public RadarChartResponse getRadarChart(Long userId) {
         User user = userRepository.findById(userId)
@@ -53,6 +57,35 @@ public class DashboardService {
                 .filter(Objects::nonNull)
                 .toList();
 
+        if (!competencies.isEmpty()) {
+            return new RadarChartResponse(competencies);
+        }
+
+        // CompetencyScore 없으면 최신 진단 결과로 fallback
+        return diagnosticResultRepository.findTopByUserOrderByCreatedAtDesc(user)
+                .map(this::radarFromDiagnostic)
+                .orElse(new RadarChartResponse(List.of()));
+    }
+
+    private RadarChartResponse radarFromDiagnostic(DiagnosticResult d) {
+        Map<CompetencyType, Integer> scoreMap = Map.of(
+                CompetencyType.FACTUAL,     d.getFactualScore(),
+                CompetencyType.INFERENTIAL, d.getInferentialScore(),
+                CompetencyType.CRITICAL,    d.getCriticalScore(),
+                CompetencyType.VOCABULARY,  d.getVocabularyScore(),
+                CompetencyType.LOGICAL,     d.getLogicalScore()
+        );
+        List<RadarChartResponse.CompetencyDetail> competencies = Arrays.stream(CompetencyType.values())
+                .map(type -> {
+                    int score = scoreMap.getOrDefault(type, 50);
+                    return new RadarChartResponse.CompetencyDetail(
+                            type,
+                            BigDecimal.valueOf(score),
+                            CompetencyLevel.from(score),
+                            BigDecimal.ZERO
+                    );
+                })
+                .toList();
         return new RadarChartResponse(competencies);
     }
 

@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,6 +39,7 @@ class WritingAiServiceTest {
     @Mock ProblemRepository problemRepository;
     @Mock ProblemKeywordRepository problemKeywordRepository;
     @InjectMocks WritingAiService writingAiService;
+    @Captor ArgumentCaptor<CompareAnswersAiRequest> compareCaptor;
 
     private Problem mockProblem;
 
@@ -126,9 +129,8 @@ class WritingAiServiceTest {
 
         writingAiService.compareAnswers(new CompareAnswersRequest(1L, "이전", 40, "현재", 50));
 
-        verify(aiWritingService).compareAnswers(argThat(r ->
-                r.keywords() != null && !r.keywords().isEmpty()
-        ));
+        verify(aiWritingService).compareAnswers(compareCaptor.capture());
+        assertThat(compareCaptor.getValue().keywords()).isNotEmpty();
     }
 
     // ── generateWeaknessReport ───────────────────────────────────────────────
@@ -157,9 +159,4 @@ class WritingAiServiceTest {
         assertThat(result.recommendations()).isNotEmpty();
     }
 
-    // ── import helper ────────────────────────────────────────────────────────
-    private static <T> org.mockito.ArgumentMatcher<T> argThat(
-            java.util.function.Predicate<T> predicate) {
-        return predicate::test;
-    }
 }

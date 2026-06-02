@@ -112,6 +112,33 @@ public class CompetencyScoreService {
                 .toList();
     }
 
+    public void adjustForErrorTypes(Long userId, ReadingType problemType, int finalScore, List<String> errorTypes) {
+        if (errorTypes == null || errorTypes.isEmpty()) return;
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        CompetencyType problemCompetency = readingTypeToCompetencyType(problemType);
+
+        for (String errorType : errorTypes) {
+            CompetencyType target = switch (errorType) {
+                case "어휘 부족" -> CompetencyType.VOCABULARY;
+                case "논리 비약" -> CompetencyType.LOGICAL;
+                default -> null;
+            };
+            if (target == null || target == problemCompetency) continue;
+
+            ReadingType targetReadingType = switch (target) {
+                case VOCABULARY -> ReadingType.VOCABULARY;
+                case LOGICAL    -> ReadingType.LOGICAL;
+                default -> null;
+            };
+            if (targetReadingType == null) continue;
+
+            updateAfterResponse(userId, targetReadingType, finalScore);
+        }
+    }
+
     private CompetencyType readingTypeToCompetencyType(ReadingType readingType) {
         return switch (readingType) {
             case FACTUAL     -> CompetencyType.FACTUAL;

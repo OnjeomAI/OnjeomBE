@@ -8,5 +8,6 @@ public record AiGradingResult(
         List<String> foundKeywords,
         List<AiKeyword> missingKeywords,
         String feedback,
-        String gradeReason
+        String gradeReason,
+        List<String> errorTypes
 ) {}

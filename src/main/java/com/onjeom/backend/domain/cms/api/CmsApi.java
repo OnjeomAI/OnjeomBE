@@ -31,7 +31,7 @@ public interface CmsApi {
     @PostMapping("/problems")
     ResponseEntity<ApiResponse<?>> createProblem(@Valid @RequestBody CreateProblemRequest request);
 
-    @Operation(summary = "AI 문제 자동 생성", description = "AI가 난이도와 독해 유형에 맞는 지문/문제/모범답안을 생성하여 DB에 저장합니다.")
+    @Operation(summary = "AI 문제 자동 생성", description = "AI가 난이도와 독해 유형에 맞는 지문/문제/모범답안을 생성하여 DB에 저장합니다. 생성 가능 유형: FACTUAL·INFERENTIAL·CRITICAL·CREATIVE")
     @SecurityRequirement(name = "BearerAuth")
     @PostMapping("/problems/generate")
     ResponseEntity<ApiResponse<?>> generateProblem(@Valid @RequestBody GenerateProblemRequest request);

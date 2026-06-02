@@ -72,7 +72,7 @@ public class CurriculumService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Curriculum curriculum = curriculumRepository
-                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE)
+                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.IN_PROGRESS)
                 .orElseThrow(() -> new CustomException(ErrorCode.CURRICULUM_NOT_FOUND));
 
         List<CurriculumItem> allItems = curriculumItemRepository
@@ -105,7 +105,7 @@ public class CurriculumService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Curriculum curriculum = curriculumRepository
-                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE)
+                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.IN_PROGRESS)
                 .orElseThrow(() -> new CustomException(ErrorCode.CURRICULUM_NOT_FOUND));
 
         int totalItems = curriculumItemRepository

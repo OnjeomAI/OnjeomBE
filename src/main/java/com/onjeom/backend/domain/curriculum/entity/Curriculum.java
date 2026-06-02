@@ -50,7 +50,7 @@ public class Curriculum extends BaseTimeEntity {
     }
 
     public void resume() {
-        this.status = CurriculumStatus.ACTIVE;
+        this.status = CurriculumStatus.IN_PROGRESS;
     }
 
     public void complete() {

@@ -18,6 +18,7 @@ public class AiApiConfig {
                 .baseUrl(aiApiUrl)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("ngrok-skip-browser-warning", "true")
                 .build();
     }
 }

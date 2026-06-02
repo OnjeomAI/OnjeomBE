@@ -44,6 +44,7 @@ Authorization: Bearer {accessToken}
 | CompetencyType | `FACTUAL`, `INFERENTIAL`, `CRITICAL`, `VOCABULARY`, `LOGICAL` |
 | CompetencyLevel | `LOW`, `MEDIUM`, `HIGH` |
 | VectorIndexStatus | `PENDING`, `DONE`, `FAILED` |
+| FontSize | `SMALL`, `MEDIUM`, `LARGE` |
 
 ---
 
@@ -263,7 +264,8 @@ Authorization: Bearer {accessToken}
     "role": "ROLE_USER",
     "dailyGoal": 10,
     "alarmEnabled": true,
-    "emailVerified": true
+    "emailVerified": true,
+    "fontSize": "MEDIUM"
   }
 }
 ```
@@ -303,7 +305,8 @@ Authorization: Bearer {accessToken}
     "role": "ROLE_USER",
     "dailyGoal": 10,
     "alarmEnabled": true,
-    "emailVerified": true
+    "emailVerified": true,
+    "fontSize": "MEDIUM"
   }
 }
 ```
@@ -1261,3 +1264,37 @@ PENDING 또는 실패 상태인 문제의 벡터 인덱싱을 수동으로 재�
 ### 12-10. 관리자 통계 조회
 
 **GET** `/api/admin/dashboard/stats` `🔒 인증 필요`
+
+**Response**
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "totalUsers": 120,
+    "newUsersThisMonth": 15,
+    "totalResponses": 3400,
+    "activeUsersThisMonth": 80,
+    "overallAverageScore": 68.5,
+    "competencyStats": [
+      {
+        "type": "CRITICAL",
+        "averageScore": 52.3,
+        "userCount": 95
+      }
+    ]
+  }
+}
+```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| totalUsers | Long | 전체 가입자 수 |
+| newUsersThisMonth | Long | 이번 달 신규 가입자 수 |
+| totalResponses | Long | 전체 답변 제출 수 |
+| activeUsersThisMonth | Long | 이번 달 활성 사용자 수 |
+| overallAverageScore | Double | 전체 평균 점수 |
+| competencyStats | List | 역량별 통계 |
+| competencyStats[].type | CompetencyType | 역량 유형 |
+| competencyStats[].averageScore | Double | 역량별 평균 점수 |
+| competencyStats[].userCount | Long | 해당 역량 응답 사용자 수 |

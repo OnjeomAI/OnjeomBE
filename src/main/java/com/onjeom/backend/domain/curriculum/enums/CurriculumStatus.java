@@ -1,5 +1,5 @@
 package com.onjeom.backend.domain.curriculum.enums;
 
 public enum CurriculumStatus {
-    ACTIVE, PAUSED, COMPLETED
+    IN_PROGRESS, PAUSED, COMPLETED
 }

@@ -21,7 +21,10 @@ public class AiTutorServiceImpl implements AiTutorService {
     private final RestClient restClient;
 
     public AiTutorServiceImpl(@Value("${ai.server.url}") String aiServerUrl) {
-        this.restClient = RestClient.builder().baseUrl(aiServerUrl).build();
+        this.restClient = RestClient.builder()
+                .baseUrl(aiServerUrl)
+                .defaultHeader("ngrok-skip-browser-warning", "true")
+                .build();
     }
 
     @Override

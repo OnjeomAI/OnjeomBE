@@ -166,7 +166,7 @@ public class NotificationService {
     private void addCurriculumProgressNotification(User user, LocalDateTime now,
                                                     List<NotificationResponse.NotificationItem> items) {
         Optional<Curriculum> curriculum = curriculumRepository
-                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE);
+                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.IN_PROGRESS);
         if (curriculum.isEmpty()) return;
 
         Curriculum c = curriculum.get();
@@ -187,7 +187,7 @@ public class NotificationService {
     private void addNewContentNotification(User user, LocalDateTime now,
                                             List<NotificationResponse.NotificationItem> items) {
         Optional<Curriculum> curriculum = curriculumRepository
-                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.ACTIVE);
+                .findTopByUserAndStatusOrderByCreatedAtDesc(user, CurriculumStatus.IN_PROGRESS);
         if (curriculum.isEmpty()) return;
 
         int pendingCount = curriculumItemRepository

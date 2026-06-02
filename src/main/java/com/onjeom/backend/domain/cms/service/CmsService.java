@@ -58,7 +58,10 @@ public class CmsService {
 
     @PostConstruct
     public void init() {
-        this.aiRestClient = RestClient.builder().baseUrl(aiServerUrl).build();
+        this.aiRestClient = RestClient.builder()
+                .baseUrl(aiServerUrl)
+                .defaultHeader("ngrok-skip-browser-warning", "true")
+                .build();
     }
 
     @Transactional(readOnly = true)

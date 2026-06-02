@@ -56,7 +56,8 @@ public class ResponseService {
                 problem.getQuestionText(),
                 problem.getModelAnswer(),
                 keywords,
-                request.answerText()
+                request.answerText(),
+                problem.getReadingType().name()
         );
 
         int attemptNumber = responseRepository.countByUserIdAndProblemId(userId, problem.getId()) + 1;

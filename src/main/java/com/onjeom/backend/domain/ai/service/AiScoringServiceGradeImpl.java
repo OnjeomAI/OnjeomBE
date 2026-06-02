@@ -25,7 +25,7 @@ public class AiScoringServiceGradeImpl implements AiScoringService {
     @Override
     public AiGradingResult scoreAnswer(String passageText, String questionText,
                                        String modelAnswer, List<AiKeyword> keywords,
-                                       String userAnswer) {
+                                       String userAnswer, String readingType) {
         record GradeRequest(String passage, String question, String model_answer,
                             List<AiKeyword> keywords, String student_answer) {}
 

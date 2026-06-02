@@ -9,5 +9,6 @@ public record WritingEvaluateRequest(
         @JsonProperty("question_text") String questionText,
         @JsonProperty("model_answer")  String modelAnswer,
         @JsonProperty("user_answer")   String userAnswer,
-        @JsonProperty("keywords")      List<KeywordDto> keywords
+        @JsonProperty("keywords")      List<KeywordDto> keywords,
+        @JsonProperty("reading_type")  String readingType
 ) {}

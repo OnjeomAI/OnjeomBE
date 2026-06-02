@@ -23,14 +23,14 @@ public class AiScoringServiceWritingImpl implements AiScoringService {
     @Override
     public AiGradingResult scoreAnswer(String passageText, String questionText,
                                        String modelAnswer, List<AiKeyword> keywords,
-                                       String userAnswer) {
+                                       String userAnswer, String readingType) {
         List<KeywordDto> keywordDtos = (keywords == null ? List.<AiKeyword>of() : keywords)
                 .stream()
                 .map(k -> new KeywordDto(k.keyword(), k.weight()))
                 .toList();
 
         WritingEvaluateRequest request = new WritingEvaluateRequest(
-                passageText, questionText, modelAnswer, userAnswer, keywordDtos
+                passageText, questionText, modelAnswer, userAnswer, keywordDtos, readingType
         );
 
         try {

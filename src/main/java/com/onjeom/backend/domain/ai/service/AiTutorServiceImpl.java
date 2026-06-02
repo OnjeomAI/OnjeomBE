@@ -4,8 +4,8 @@ import com.onjeom.backend.domain.ai.dto.request.TermExplainRequest;
 import com.onjeom.backend.domain.ai.dto.request.TutorQuestionRequest;
 import com.onjeom.backend.domain.ai.dto.response.TermExplainResponse;
 import com.onjeom.backend.domain.ai.dto.response.TutorAnswerResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -16,13 +16,10 @@ import java.util.List;
 @Slf4j
 @Primary
 @Service
+@RequiredArgsConstructor
 public class AiTutorServiceImpl implements AiTutorService {
 
-    private final RestClient restClient;
-
-    public AiTutorServiceImpl(@Value("${ai.server.url}") String aiServerUrl) {
-        this.restClient = RestClient.builder().baseUrl(aiServerUrl).build();
-    }
+    private final RestClient aiRestClient;
 
     @Override
     public TutorAnswerResponse ask(Long userId, TutorQuestionRequest request) {
@@ -30,7 +27,7 @@ public class AiTutorServiceImpl implements AiTutorService {
         record AiTutorResponse(String answer, List<String> sources) {}
 
         try {
-            AiTutorResponse response = restClient.post()
+            AiTutorResponse response = aiRestClient.post()
                     .uri("/api/tutor/ask")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new AiTutorRequest(request.question()))
@@ -59,7 +56,7 @@ public class AiTutorServiceImpl implements AiTutorService {
         record AiExplainResponse(String term, String explanation) {}
 
         try {
-            AiExplainResponse response = restClient.post()
+            AiExplainResponse response = aiRestClient.post()
                     .uri("/api/writing/explain-term")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new AiExplainRequest(request.term(), request.passageText()))

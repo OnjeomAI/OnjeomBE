@@ -24,7 +24,10 @@ public class AiCurriculumServiceGenerateImpl implements AiCurriculumService {
     public AiCurriculumServiceGenerateImpl(
             @Value("${ai.server.url}") String aiServerUrl,
             ProblemRepository problemRepository) {
-        this.restClient = RestClient.builder().baseUrl(aiServerUrl).build();
+        this.restClient = RestClient.builder()
+                .baseUrl(aiServerUrl)
+                .defaultHeader("ngrok-skip-browser-warning", "true")
+                .build();
         this.problemRepository = problemRepository;
     }
 

@@ -19,6 +19,7 @@ public class AiScoringServiceGradeImpl implements AiScoringService {
     public AiScoringServiceGradeImpl(@Value("${ai.server.url}") String aiServerUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(aiServerUrl)
+                .defaultHeader("ngrok-skip-browser-warning", "true")
                 .build();
     }
 

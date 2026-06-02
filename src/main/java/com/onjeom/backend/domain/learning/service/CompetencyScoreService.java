@@ -37,6 +37,11 @@ public class CompetencyScoreService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // CREATIVE는 커리큘럼 심화 콘텐츠 전용 — 역량 점수 미반영
+        if (readingType == ReadingType.CREATIVE) {
+            return latestScores(user);
+        }
+
         CompetencyType competencyType = readingTypeToCompetencyType(readingType);
 
         KnowledgeTracing kt = knowledgeTracingRepository

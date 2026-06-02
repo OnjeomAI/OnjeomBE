@@ -279,6 +279,7 @@ public class DiagnosticService {
         Map<String, List<Integer>> byType = new HashMap<>();
         for (int i = 0; i < Math.min(problems.size(), scores.size()); i++) {
             String key = readingTypeToKey(problems.get(i).getReadingType());
+            if (key == null) continue;  // CREATIVE는 역량 미반영
             byType.computeIfAbsent(key, k -> new ArrayList<>()).add(scores.get(i));
         }
 
@@ -295,11 +296,12 @@ public class DiagnosticService {
 
     private String readingTypeToKey(ReadingType type) {
         return switch (type) {
-            case FACTUAL      -> "factual";
-            case INFERENTIAL  -> "inferential";
-            case CRITICAL, CREATIVE -> "critical";
-            case VOCABULARY   -> "vocabulary";
-            case LOGICAL      -> "logical";
+            case FACTUAL     -> "factual";
+            case INFERENTIAL -> "inferential";
+            case CRITICAL    -> "critical";
+            case CREATIVE    -> null;  // 역량 미반영 — 심화 콘텐츠 전용
+            case VOCABULARY  -> "vocabulary";
+            case LOGICAL     -> "logical";
         };
     }
 

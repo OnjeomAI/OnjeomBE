@@ -75,7 +75,19 @@ public class CmsService {
                 ));
     }
 
+    private static final java.util.Set<ReadingType> ACTIVE_READING_TYPES = java.util.Set.of(
+            ReadingType.FACTUAL, ReadingType.INFERENTIAL,
+            ReadingType.CRITICAL, ReadingType.CREATIVE
+    );
+
+    private void validateReadingType(ReadingType readingType) {
+        if (readingType != null && !ACTIVE_READING_TYPES.contains(readingType)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
     public ProblemDetailResponse createProblem(CreateProblemRequest request) {
+        validateReadingType(request.readingType());
         Problem problem = Problem.builder()
                 .passageText(request.passageText())
                 .questionText(request.questionText())
@@ -107,6 +119,7 @@ public class CmsService {
     }
 
     public ProblemDetailResponse generateProblem(GenerateProblemRequest request) {
+        validateReadingType(request.readingType());
         record AiGenerateRequest(int difficulty, String reading_type, String topic) {}
         record AiGenerateResponse(String passage_text, String question_text, String model_answer,
                                   String reading_type, int difficulty) {}
@@ -154,6 +167,7 @@ public class CmsService {
     }
 
     public ProblemDetailResponse updateProblem(Long problemId, UpdateProblemRequest request) {
+        validateReadingType(request.readingType());
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
         problem.update(request);

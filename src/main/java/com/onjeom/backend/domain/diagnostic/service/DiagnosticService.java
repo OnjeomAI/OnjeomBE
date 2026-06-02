@@ -70,12 +70,12 @@ public class DiagnosticService {
 
         if (allScores.isEmpty()) return DEFAULT_SLOT_TYPES;
 
-        Map<CompetencyType, Integer> scores = new java.util.EnumMap<>(allScores.stream()
+        Map<CompetencyType, Integer> scores = allScores.stream()
                 .collect(Collectors.toMap(
                         cs -> cs.getCompetencyType(),
                         cs -> cs.getScore().intValue(),
-                        (a, b) -> a  // 동일 타입은 최신값 유지
-                )));
+                        (a, b) -> a
+                ));
 
         Arrays.stream(CompetencyType.values())
                 .filter(t -> !scores.containsKey(t))

@@ -46,20 +46,22 @@ public class DiagnosticService {
     private final Map<Long, List<Integer>> diagnosticScores = new ConcurrentHashMap<>();
     private final Map<Long, List<ReadingType>> diagnosticSlots = new ConcurrentHashMap<>();
 
+    // CREATIVE×4 → vocabulary+logical 동시 측정 (각 2문제 분량)
     private static final List<ReadingType> DEFAULT_SLOT_TYPES = List.of(
             ReadingType.FACTUAL,     ReadingType.FACTUAL,
             ReadingType.INFERENTIAL, ReadingType.INFERENTIAL,
             ReadingType.CRITICAL,    ReadingType.CRITICAL,
-            ReadingType.VOCABULARY,  ReadingType.VOCABULARY,
-            ReadingType.LOGICAL,     ReadingType.LOGICAL
+            ReadingType.CREATIVE,    ReadingType.CREATIVE,
+            ReadingType.CREATIVE,    ReadingType.CREATIVE
     );
 
+    // 취약 역량 → 출제 유형 매핑 (VOCABULARY·LOGICAL 모두 CREATIVE로)
     private static final Map<CompetencyType, ReadingType> COMPETENCY_TO_READING = Map.of(
             CompetencyType.FACTUAL,     ReadingType.FACTUAL,
             CompetencyType.INFERENTIAL, ReadingType.INFERENTIAL,
             CompetencyType.CRITICAL,    ReadingType.CRITICAL,
-            CompetencyType.VOCABULARY,  ReadingType.VOCABULARY,
-            CompetencyType.LOGICAL,     ReadingType.LOGICAL
+            CompetencyType.VOCABULARY,  ReadingType.CREATIVE,
+            CompetencyType.LOGICAL,     ReadingType.CREATIVE
     );
 
     private List<ReadingType> buildSlotTypes(User user) {
@@ -278,9 +280,15 @@ public class DiagnosticService {
     private Map<String, Integer> calculateCompetencyScores(List<Problem> problems, List<Integer> scores) {
         Map<String, List<Integer>> byType = new HashMap<>();
         for (int i = 0; i < Math.min(problems.size(), scores.size()); i++) {
-            String key = readingTypeToKey(problems.get(i).getReadingType());
-            if (key == null) continue;  // CREATIVE는 역량 미반영
-            byType.computeIfAbsent(key, k -> new ArrayList<>()).add(scores.get(i));
+            ReadingType rt = problems.get(i).getReadingType();
+            if (rt == ReadingType.CREATIVE) {
+                // CREATIVE → vocabulary + logical 동시 반영
+                byType.computeIfAbsent("vocabulary", k -> new ArrayList<>()).add(scores.get(i));
+                byType.computeIfAbsent("logical",    k -> new ArrayList<>()).add(scores.get(i));
+            } else {
+                String key = readingTypeToKey(rt);
+                if (key != null) byType.computeIfAbsent(key, k -> new ArrayList<>()).add(scores.get(i));
+            }
         }
 
         int totalAvg = (int) scores.stream().mapToInt(Integer::intValue).average().orElse(50.0);
@@ -299,7 +307,7 @@ public class DiagnosticService {
             case FACTUAL     -> "factual";
             case INFERENTIAL -> "inferential";
             case CRITICAL    -> "critical";
-            case CREATIVE    -> null;  // 역량 미반영 — 심화 콘텐츠 전용
+            case CREATIVE    -> null;  // calculateCompetencyScores에서 직접 처리
             case VOCABULARY  -> "vocabulary";
             case LOGICAL     -> "logical";
         };

@@ -37,13 +37,18 @@ public class CompetencyScoreService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // CREATIVE는 커리큘럼 심화 콘텐츠 전용 — 역량 점수 미반영
+        // CREATIVE → VOCABULARY + LOGICAL 역량 동시 반영 (50:50)
         if (readingType == ReadingType.CREATIVE) {
+            updateCompetency(user, CompetencyType.VOCABULARY, finalScore);
+            updateCompetency(user, CompetencyType.LOGICAL, finalScore);
             return latestScores(user);
         }
 
-        CompetencyType competencyType = readingTypeToCompetencyType(readingType);
+        updateCompetency(user, readingTypeToCompetencyType(readingType), finalScore);
+        return latestScores(user);
+    }
 
+    private void updateCompetency(User user, CompetencyType competencyType, int finalScore) {
         KnowledgeTracing kt = knowledgeTracingRepository
                 .findByUserAndCompetencyType(user, competencyType)
                 .orElseGet(() -> {
@@ -59,8 +64,7 @@ public class CompetencyScoreService {
                     return knowledgeTracingRepository.save(newKt);
                 });
 
-        boolean isCorrect = finalScore >= 60;
-        kt.update(isCorrect);
+        kt.update(finalScore >= 60);
         knowledgeTracingRepository.save(kt);
 
         BigDecimal prevScore = competencyScoreRepository
@@ -72,20 +76,14 @@ public class CompetencyScoreService {
                 .multiply(BigDecimal.valueOf(100))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal delta = newScore.subtract(prevScore).setScale(2, RoundingMode.HALF_UP);
-        CompetencyLevel level = CompetencyLevel.from(newScore.doubleValue());
-
-        CompetencyScore competencyScore = CompetencyScore.builder()
+        competencyScoreRepository.save(CompetencyScore.builder()
                 .user(user)
                 .competencyType(competencyType)
                 .score(newScore)
-                .level(level)
-                .delta(delta)
+                .level(CompetencyLevel.from(newScore.doubleValue()))
+                .delta(newScore.subtract(prevScore).setScale(2, RoundingMode.HALF_UP))
                 .measuredAt(LocalDateTime.now())
-                .build();
-        competencyScoreRepository.save(competencyScore);
-
-        return latestScores(user);
+                .build());
     }
 
     @Transactional(readOnly = true)
@@ -119,6 +117,7 @@ public class CompetencyScoreService {
 
     public void adjustForErrorTypes(Long userId, ReadingType problemType, int finalScore, List<String> errorTypes) {
         if (errorTypes == null || errorTypes.isEmpty()) return;
+        // CREATIVE는 updateAfterResponse에서 VOCABULARY+LOGICAL 양쪽 이미 처리
         if (problemType == ReadingType.CREATIVE) return;
 
         User user = userRepository.findById(userId)
@@ -133,15 +132,7 @@ public class CompetencyScoreService {
                 default -> null;
             };
             if (target == null || target == problemCompetency) continue;
-
-            ReadingType targetReadingType = switch (target) {
-                case VOCABULARY -> ReadingType.VOCABULARY;
-                case LOGICAL    -> ReadingType.LOGICAL;
-                default -> null;
-            };
-            if (targetReadingType == null) continue;
-
-            updateAfterResponse(userId, targetReadingType, finalScore);
+            updateCompetency(user, target, finalScore);
         }
     }
 
@@ -149,7 +140,8 @@ public class CompetencyScoreService {
         return switch (readingType) {
             case FACTUAL     -> CompetencyType.FACTUAL;
             case INFERENTIAL -> CompetencyType.INFERENTIAL;
-            case CRITICAL, CREATIVE -> CompetencyType.CRITICAL;
+            case CRITICAL    -> CompetencyType.CRITICAL;
+            case CREATIVE    -> throw new IllegalStateException("CREATIVE은 updateAfterResponse에서 직접 처리");
             case VOCABULARY  -> CompetencyType.VOCABULARY;
             case LOGICAL     -> CompetencyType.LOGICAL;
         };

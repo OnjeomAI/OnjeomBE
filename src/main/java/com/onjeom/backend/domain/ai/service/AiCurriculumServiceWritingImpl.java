@@ -80,13 +80,12 @@ public class AiCurriculumServiceWritingImpl implements AiCurriculumService {
             }
         }
 
+        // CREATIVE 문제로 어휘·논리 역량 커버 (추가 스테이지)
         int nextStage = plan.isEmpty() ? 1 : Collections.max(plan.keySet()) + 1;
-        for (ReadingType rt : List.of(ReadingType.VOCABULARY, ReadingType.LOGICAL)) {
-            List<Long> ids = problemRepository.findByReadingType(rt)
-                    .stream().map(Problem::getId).toList();
-            if (!ids.isEmpty()) {
-                plan.put(nextStage++, ids.subList(0, Math.min(perStage, ids.size())));
-            }
+        List<Long> creativeIds = problemRepository.findByReadingType(ReadingType.CREATIVE)
+                .stream().map(Problem::getId).toList();
+        if (!creativeIds.isEmpty()) {
+            plan.put(nextStage, creativeIds.subList(0, Math.min(perStage, creativeIds.size())));
         }
         return plan;
     }

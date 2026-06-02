@@ -13,6 +13,8 @@ import java.util.List;
 
 public interface ResponseRepository extends JpaRepository<Response, Long> {
 
+    void deleteByProblemId(Long problemId);
+
     List<Response> findByUserIdAndProblemIdOrderByCreatedAtAsc(Long userId, Long problemId);
 
     int countByUserIdAndProblemId(Long userId, Long problemId);

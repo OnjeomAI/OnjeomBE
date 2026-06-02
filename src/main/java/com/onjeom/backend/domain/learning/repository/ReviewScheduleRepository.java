@@ -13,6 +13,8 @@ public interface ReviewScheduleRepository extends JpaRepository<ReviewSchedule, 
 
     List<ReviewSchedule> findByUserAndNextReviewAtBefore(User user, LocalDateTime now);
 
+    void deleteByProblem(Problem problem);
+
     Optional<ReviewSchedule> findByUserAndProblem(User user, Problem problem);
 
     List<ReviewSchedule> findByUserOrderByNextReviewAtAsc(User user);

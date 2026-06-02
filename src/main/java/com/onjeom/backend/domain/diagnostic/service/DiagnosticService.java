@@ -209,16 +209,12 @@ public class DiagnosticService {
 
         int totalAvg = (int) scores.stream().mapToInt(Integer::intValue).average().orElse(50.0);
 
-        List<Integer> inferCritical = new ArrayList<>();
-        inferCritical.addAll(byType.getOrDefault("inferential", List.of()));
-        inferCritical.addAll(byType.getOrDefault("critical", List.of()));
-
         Map<String, Integer> result = new HashMap<>();
         result.put("factual",     avg(byType.getOrDefault("factual",     List.of(totalAvg))));
         result.put("inferential", avg(byType.getOrDefault("inferential", List.of(totalAvg))));
         result.put("critical",    avg(byType.getOrDefault("critical",    List.of(totalAvg))));
-        result.put("vocabulary",  avg(byType.getOrDefault("factual",     List.of(totalAvg))));
-        result.put("logical",     inferCritical.isEmpty() ? totalAvg : avg(inferCritical));
+        result.put("vocabulary",  avg(byType.getOrDefault("vocabulary",  List.of(totalAvg))));
+        result.put("logical",     avg(byType.getOrDefault("logical",     List.of(totalAvg))));
         return result;
     }
 
@@ -227,6 +223,8 @@ public class DiagnosticService {
             case FACTUAL      -> "factual";
             case INFERENTIAL  -> "inferential";
             case CRITICAL, CREATIVE -> "critical";
+            case VOCABULARY   -> "vocabulary";
+            case LOGICAL      -> "logical";
         };
     }
 

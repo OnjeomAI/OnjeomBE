@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -62,21 +63,21 @@ public class DiagnosticService {
     );
 
     private List<ReadingType> buildSlotTypes(User user) {
-        Map<CompetencyType, Integer> scores = new EnumMap<>(CompetencyType.class);
-        boolean hasHistory = false;
+        List<com.onjeom.backend.domain.learning.entity.CompetencyScore> allScores =
+                competencyScoreRepository.findByUserOrderByMeasuredAtDesc(user);
 
-        for (CompetencyType type : CompetencyType.values()) {
-            Optional<com.onjeom.backend.domain.learning.entity.CompetencyScore> cs =
-                    competencyScoreRepository.findTopByUserAndCompetencyTypeOrderByMeasuredAtDesc(user, type);
-            if (cs.isPresent()) {
-                scores.put(type, cs.get().getScore().intValue());
-                hasHistory = true;
-            } else {
-                scores.put(type, 50);
-            }
-        }
+        if (allScores.isEmpty()) return DEFAULT_SLOT_TYPES;
 
-        if (!hasHistory) return DEFAULT_SLOT_TYPES;
+        Map<CompetencyType, Integer> scores = allScores.stream()
+                .collect(Collectors.toMap(
+                        cs -> cs.getCompetencyType(),
+                        cs -> cs.getScore().intValue(),
+                        (a, b) -> a  // 동일 타입은 최신값 유지
+                ));
+
+        Arrays.stream(CompetencyType.values())
+                .filter(t -> !scores.containsKey(t))
+                .forEach(t -> scores.put(t, 50));
 
         // 취약순 정렬 후 weakest 3문제, 나머지 2·2·2·1 배분 (합계 10)
         List<CompetencyType> sorted = Arrays.stream(CompetencyType.values())

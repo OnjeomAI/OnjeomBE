@@ -130,8 +130,9 @@ public class CmsService {
     public ProblemDetailResponse generateProblem(GenerateProblemRequest request) {
         validateReadingType(request.readingType());
         record AiGenerateRequest(int difficulty, String reading_type, String topic) {}
+        record AiKeyword(String keyword, int weight) {}
         record AiGenerateResponse(String passage_text, String question_text, String model_answer,
-                                  String reading_type, int difficulty) {}
+                                  String reading_type, int difficulty, List<AiKeyword> keywords) {}
 
         AiGenerateResponse aiResponse;
         try {
@@ -170,9 +171,23 @@ public class CmsService {
                 .vectorIndexStatus(VectorIndexStatus.PENDING)
                 .build();
         problemRepository.save(problem);
+
+        List<ProblemKeyword> keywords = new ArrayList<>();
+        if (aiResponse.keywords() != null) {
+            for (AiKeyword kw : aiResponse.keywords()) {
+                ProblemKeyword keyword = ProblemKeyword.builder()
+                        .problem(problem)
+                        .keyword(kw.keyword())
+                        .weight(kw.weight())
+                        .build();
+                problemKeywordRepository.save(keyword);
+                keywords.add(keyword);
+            }
+        }
+
         triggerIndexing(problem);
 
-        return toDetailResponse(problem, List.of());
+        return toDetailResponse(problem, keywords);
     }
 
     public ProblemDetailResponse updateProblem(Long problemId, UpdateProblemRequest request) {
